@@ -1,0 +1,216 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..800;1,300..800&display=swap");
+
+
+@font-face {
+  font-family: 'Cera Pro';
+  src: url('/fonts/CeraPro-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cera Pro';
+  src: url('/fonts/CeraPro-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cera Pro';
+  src: url('/fonts/CeraPro-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-[#303030] dark:bg-navy dark:text-gray-100 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+
+  /* Default focus-visible for accessibility */
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 dark:ring-offset-navy;
+  }
+
+
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-gray-100 dark:bg-navy-dark; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-white/20 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+}
+
+@layer components {
+  /* Light card — replaces the old dark bg-gray-900 pattern */
+  .card-light {
+    @apply bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-xl shadow-card;
+  }
+  .card-light-hover {
+    @apply hover:border-primary/30 hover:shadow-card-hover transition-all;
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY MODES (Managed by AccessibilityProvider)
+   ========================================================================== */
+
+/* 👁️ High Contrast Mode */
+html.a11y-high-contrast body {
+  @apply bg-black text-white;
+}
+html.a11y-high-contrast * {
+  border-color: white !important;
+  color: white !important;
+}
+html.a11y-high-contrast .bg-white,
+html.a11y-high-contrast .bg-surface,
+html.a11y-high-contrast .bg-primary,
+html.a11y-high-contrast .bg-navy,
+html.a11y-high-contrast .bg-navy-dark,
+html.a11y-high-contrast [class*="bg-"] {
+  background-color: black !important;
+}
+html.a11y-high-contrast img,
+html.a11y-high-contrast svg {
+  filter: grayscale(100%) contrast(150%) !important;
+}
+/* Ajout de contours (outlines) pour délimiter les zones en High Contrast */
+html.a11y-high-contrast header,
+html.a11y-high-contrast nav,
+html.a11y-high-contrast footer,
+html.a11y-high-contrast .card-light,
+html.a11y-high-contrast button,
+html.a11y-high-contrast input,
+html.a11y-high-contrast select,
+html.a11y-high-contrast textarea,
+html.a11y-high-contrast img,
+html.a11y-high-contrast video,
+html.a11y-high-contrast [role="dialog"],
+html.a11y-high-contrast [role="menu"],
+html.a11y-high-contrast .toggle-track {
+  outline: 1px solid white !important;
+  outline-offset: -1px !important;
+}
+
+/* Force les pastilles des toggles à rester blanches pour être visibles */
+html.a11y-high-contrast div.toggle-thumb {
+  background-color: white !important;
+}
+
+/* 🧠 Dyslexic Font Mode */
+html.a11y-dyslexic * {
+  font-family: "Comic Sans MS", "OpenDyslexic", "Lexend", sans-serif !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.8 !important;
+  text-align: left !important;
+}
+
+/* 🎯 Read Mode (Focus) */
+html.a11y-read-mode body {
+  /* Température de couleur via RGB dynamique: plus la temp est haute, plus c'est chaud/sépia */
+  background-color: rgb(
+    calc(255 - (10 * var(--read-mode-temp, 0.5))),
+    calc(255 - (25 * var(--read-mode-temp, 0.5))),
+    calc(255 - (55 * var(--read-mode-temp, 0.5)))
+  ) !important;
+  color: #222222 !important;
+}
+
+html.a11y-read-mode::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  /* Effet de texture de papier via SVG Noise */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: calc(var(--read-mode-texture, 0.3) * 0.4); /* 0.4 est le multiplicateur max pour éviter que ce soit trop fort */
+  mix-blend-mode: multiply;
+}
+
+html.a11y-read-mode header,
+html.a11y-read-mode footer,
+html.a11y-read-mode aside {
+  display: none !important; /* Cache les distractions */
+}
+
+/* Réduction de la largeur du site conditionnelle */
+html.a11y-read-mode-narrow main,
+html.a11y-read-mode-narrow #main-content {
+  max-width: 800px !important;
+  margin: 0 auto !important;
+  padding: 2rem !important;
+}
+
+html.a11y-read-mode main,
+html.a11y-read-mode #main-content {
+  background-color: transparent !important;
+}
+
+/* 🎬 Reduced Motion Mode */
+html.a11y-reduced-motion *,
+html.a11y-reduced-motion *::before,
+html.a11y-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ⌨️ Keyboard Nav Enhanced */
+html.a11y-keyboard-nav *:focus,
+html.a11y-keyboard-nav *:focus-visible {
+  outline: 4px solid #FF034D !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 8px rgba(255, 3, 77, 0.3) !important;
+}
+
+/* 🔎 Large Text Mode */
+html.a11y-large-text {
+  font-size: 110% !important; /* Appliqué uniquement à la racine pour éviter le chevauchement exponentiel */
+}
+
+/* ↕️ Increased Line Spacing */
+html.a11y-line-spacing * {
+  line-height: 1.8 !important;
+}
+
+/* 🔗 Highlight Links Mode */
+html.a11y-highlight-links a {
+  text-decoration: underline !important;
+  text-decoration-color: #000000 !important;
+  text-decoration-thickness: 3px !important;
+  text-underline-offset: 4px !important;
+  color: #000000 !important;
+  background-color: #FFEB3B !important; /* Fond jaune fort pour garantir le contraste */
+  font-weight: bold !important;
+  padding: 0.1em 0.3em !important;
+  border-radius: 3px !important;
+  box-shadow: 0 0 0 2px #000000 !important; /* Bordure noire pour que ça se détache partout */
+}
+
+/* 🔲 Monochrome Mode */
+html.a11y-monochrome {
+  filter: grayscale(100%) !important;
+}
+
+/* 🔊 Lecture à voix haute (Screen Reader) */
+.a11y-reading-focus {
+  outline: 3px solid #FF034D !important;
+  outline-offset: 4px !important;
+  border-radius: 4px !important;
+  background-color: rgba(255, 3, 77, 0.1) !important;
+  transition: background-color 0.3s ease, outline 0.3s ease;
+}

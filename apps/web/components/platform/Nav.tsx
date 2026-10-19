@@ -1,0 +1,631 @@
+/**
+ * @file Nav.tsx
+ * @description Barre de navigation principale de Hi! Platform.
+ *
+ * Composants exportés :
+ *   - `Nav`               - barre sticky complète (logo + nav principale + droite)
+ *
+ * Composants internes (non exportés) :
+ *   - `NavDropdown`       - menu déroulant pour les 3 sections Learning (Learning AI / With / Edge)
+ *   - `LangSwitcher`      - pill FR | EN (persisté dans localStorage)
+ *
+ * Architecture z-index :
+ *   z-[150]  Backdrop des NavDropdown (fermeture au clic extérieur)
+ *   z-[160]  Header sticky (passe au-dessus du contenu page)
+ *   z-[200]  Panneaux des dropdowns (NavDropdown + menu utilisateur)
+ *
+ * Stratégie de positionnement (position: fixed) :
+ *   Les dropdowns utilisent `getBoundingClientRect()` + `position: fixed` plutôt que
+ *   `position: absolute` pour éviter tout clipping causé par un ancêtre avec
+ *   `overflow: hidden` ou un contexte de pile (stacking context).
+ */
+
+"use client";
+
+import Link from "next/link";
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
+import { usePathname, useRouter } from "next/navigation";
+import { clsx } from "clsx";
+import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
+import { Avatar } from "@/components/ui/Avatar";
+import { useState, useRef, useEffect } from "react";
+
+// ─── Styles des badges de rôle ────────────────────────────────────────────────
+/**
+ * Classes Tailwind pour le chip de rôle affiché dans la nav utilisateur.
+ * Clé = valeur du champ `role` renvoyé par l'API.
+ * Fallback : `roleChip.student` si le rôle est inconnu.
+ */
+const roleChip: Record<string, string> = {
+  admin:     "bg-danger/10 text-danger border border-danger/20",
+  super_admin: "bg-purple-100 text-purple-700 border border-purple-200",
+  teacher:   "bg-primary/10 text-primary border border-primary/20",
+  student:   "bg-gray-100 dark:bg-navy-dark text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-primary/20",
+  public:    "bg-gray-100 dark:bg-navy-dark text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-primary/20",
+};
+
+// ─── NavDropdown ──────────────────────────────────────────────────────────────
+/**
+ * Dropdown des sections Learning (Learning AI / With AI / at the Edge).
+ *
+ * Chaque instance correspond à une section thématique et affiche les 4 modules
+ * (Tube, Course, MOOC, App) vers ce thème.
+ *
+ * Comportement :
+ * - Contrôlé par le parent via `isOpen` / `onToggle`
+ *   → un seul dropdown ouvert à la fois (géré dans `Nav`)
+ * - Positionné en `fixed` : calculé au clic pour rester dans le viewport
+ * - `stopPropagation` sur le panneau évite la fermeture via le backdrop
+ *
+ * @param label       - Nom de la section (ex : "Learning AI")
+ * @param slug        - Préfixe URL (ex : "learning-ai")
+ * @param description - Sous-titre affiché dans l'en-tête du panneau
+ * @param items       - Liste des modules avec href, icône, label, description courte
+ * @param isOpen      - État ouvert/fermé piloté par le parent
+ * @param onToggle    - Callback appelé avec `slug` pour basculer l'état dans le parent
+ */
+function NavDropdown({
+  label, description, slug, items, isOpen, onOpen, onClose,
+}: {
+  label:       string;
+  slug:        string;
+  description: string;
+  items:       { href: string; icon: string; label: string; desc: string }[];
+  isOpen:      boolean;
+  onOpen: (slug: string) => void; onClose: () => void;
+}) {
+  const pathname  = usePathname();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Position fixe du panneau, calculée au moment de l'ouverture.
+   * Défaut : top=72px (hauteur du header) pour éviter un saut visuel
+   * lors du premier rendu avant le calcul.
+   */
+  const [dropPos, setDropPos] = useState({ top: 72, left: 0 });
+
+  /**
+   * `true` si l'URL courante correspond à cette section.
+   * Deux cas :
+   *   - l'URL commence par `/${slug}` (sections Learning, préfixe d'URL commun) ;
+   *   - l'URL commence par le href d'un des items (sections sans préfixe commun,
+   *     ex. « Hi! PARIS Education » dont les pages sont /about et /neuripp).
+   */
+  const isActive = pathname.startsWith(`/${slug}`) || items.some((it) => pathname.startsWith(it.href));
+
+  /**
+   * Gestion du clic sur le bouton.
+   * - Si on ouvre : recalcule la position avant d'afficher le panneau.
+   * - Si on ferme : délègue directement à `onToggle`.
+   */
+  function handleMouseEnter() {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const header = buttonRef.current.closest('header');
+      const topPos = header ? header.getBoundingClientRect().bottom : rect.bottom;
+      setDropPos({ top: topPos, left: rect.left });
+    }
+    onOpen(slug);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") {
+      onClose();
+      buttonRef.current?.focus();
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); // Empêche le scroll natif
+      if (!isOpen && e.key === "ArrowDown") {
+        handleMouseEnter(); // Ouvre si fermé
+        // Le délai est géré car on doit attendre le rendu, on pourrait ajouter un setTimeout mais c'est optionnel si le focus reste sur le bouton
+        return;
+      }
+      
+      // Récupère tous les liens focusables du composant
+      const links = Array.from(e.currentTarget.querySelectorAll("a"));
+      if (!links.length) return;
+      
+      const currentIndex = links.indexOf(document.activeElement as HTMLAnchorElement);
+      let nextIndex = 0;
+      
+      if (e.key === "ArrowDown") {
+        nextIndex = currentIndex < links.length - 1 ? currentIndex + 1 : 0; // Boucle vers le haut
+      } else {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : links.length - 1; // Boucle vers le bas
+      }
+      links[nextIndex]?.focus();
+    }
+  }
+
+  return (
+    <div 
+      onMouseEnter={handleMouseEnter} 
+      onMouseLeave={onClose} 
+      onFocus={handleMouseEnter}
+      onKeyDown={handleKeyDown}
+      onBlur={(e) => {
+        // Close if focus moves completely outside the dropdown
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          onClose();
+        }
+      }}
+      className="h-full flex items-center"
+    >
+      {/* ── Bouton déclencheur ── */}
+      <button
+        ref={buttonRef}
+        aria-expanded={isOpen} // accessibilité : lecteurs d'écran
+        className={clsx(
+          "nav-item flex items-center gap-1.5 px-3 py-5 text-base font-bold transition-colors whitespace-nowrap",
+          isActive ? "is-active text-secondary" : "text-gray-900 dark:text-white hover:text-secondary"
+        )}
+      >
+        {label}
+        {/* Chevron : tourne à 180° quand le panneau est ouvert */}
+        <svg
+          className={clsx("w-3 h-3 transition-transform shrink-0 text-gray-900 dark:text-white", isOpen && "rotate-180")}
+          fill="currentColor" viewBox="0 0 20 20"
+        >
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {/* ── Panneau déroulant ── */}
+      <div
+        style={{ position: "fixed", top: dropPos.top, left: dropPos.left }}
+        className={clsx(
+          "w-72 bg-white dark:bg-navy shadow-lg border border-gray-100 dark:border-white/5 overflow-hidden z-[200] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] origin-top",
+          isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
+        )}
+        // Stoppe la propagation du clic vers le backdrop parent
+        onClick={(e) => e.stopPropagation()}
+      >
+          {/* En-tête du panneau */}
+          <div className="px-4 pt-4 pb-2.5 border-b border-gray-100 dark:border-white/5">
+            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">{label}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{description}</p>
+          </div>
+
+          {/* Liste des modules */}
+          <div className="p-2">
+            {items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={clsx(
+                  "group relative flex items-center px-3 py-2.5 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden rounded-sm",
+                  pathname.startsWith(item.href)
+                    ? "text-secondary font-bold "
+                    : "text-gray-700 dark:text-gray-200 hover:text-secondary font-semibold "
+                )}
+              >
+                <span className="absolute left-3 font-extrabold text-secondary opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
+                  ...
+                </span>
+                <div className="transform group-hover:translate-x-6 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
+                  <p className="text-sm leading-none mb-0.5">{item.label}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-colors">{item.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+    </div>
+  );
+}
+
+// ─── LangSwitcher ─────────────────────────────────────────────────────────────
+/**
+ * Pill de sélection de langue FR / EN.
+ *
+ * - Lit et écrit dans le contexte `LanguageProvider` (lib/i18n.tsx)
+ * - La locale est persistée dans `localStorage` (clé `"hi_locale"`)
+ *   et rechargée au montage du provider.
+ * - Le bouton actif reçoit le fond `bg-primary` ; l'inactif reste grisé.
+ */
+function LangSwitcher() {
+  const { locale, setLocale } = useLanguage();
+
+  return (
+    <div className="flex items-center gap-0.5 shrink-0 border border-gray-200 dark:border-primary/20 rounded-sm overflow-hidden">
+      {/* Branche FR : actif si locale === "fr" */}
+      <button
+        onClick={() => setLocale("fr")}
+        className={clsx(
+          "text-xs px-2.5 py-1.5 font-semibold transition-colors",
+          locale === "fr"
+            ? "bg-primary text-white"
+            : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-200 "
+        )}
+      >
+        FR
+      </button>
+
+      {/* Branche EN : actif si locale === "en" */}
+      <button
+        onClick={() => setLocale("en")}
+        className={clsx(
+          "text-xs px-2.5 py-1.5 font-semibold transition-colors",
+          locale === "en"
+            ? "bg-primary text-white"
+            : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-200 "
+        )}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+
+// ─── Nav (composant principal exporté) ───────────────────────────────────────
+/**
+ * Barre de navigation principale, sticky en haut de toutes les pages platform.
+ *
+ * Layout (gauche → droite) :
+ *   Logo | Insights | [Hi! PARIS Education] | [Learning AI] [Learning With AI] [Learning at the Edge of AI]
+ *   … | FR/EN | [Connexion / UserMenu]
+ *
+ * Visibilité conditionnelle des entrées :
+ *   - Studio + LMS : dans le menu avatar si `user.role` ∈ {teacher, admin, super_admin}
+ *   - Admin        : dans le menu avatar si `user.role` ∈ {admin, super_admin}
+ *   - Bouton "Connexion" : affiché si pas de session (`user === null`)
+ *   - Menu utilisateur   : affiché si session active (`user !== null`)
+ *
+ * Gestion des dropdowns Learning :
+ *   Un seul dropdown peut être ouvert à la fois (géré par `openDropdown: string | null`).
+ *   Un backdrop z-[150] couvre l'écran pour fermer au clic extérieur.
+ *
+ * Menu utilisateur :
+ *   Géré par `userMenuOpen` + un `useEffect` qui écoute `mousedown` sur le document
+ *   pour fermer si le clic est en dehors du wrapper `userMenuRef`.
+ */
+export function Nav() {
+  const pathname = usePathname();
+  const router   = useRouter();
+  const { user, logout } = useAuth();
+  const { t } = useLanguage();
+
+  /**
+   * Slug du NavDropdown actuellement ouvert (ex: "learning-ai"), ou null si aucun.
+   * Un seul dropdown Learning peut être ouvert simultanément.
+   */
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  /** `true` si le menu déroulant du profil utilisateur est ouvert */
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  /** Ref sur le wrapper du menu utilisateur pour la détection du clic extérieur */
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // --- Logique du slider (barre rouge animée) ---
+  const navRef = useRef<HTMLElement>(null);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
+  const [activeEl, setActiveEl] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Petit délai pour laisser le rendu DOM se faire
+    const timer = setTimeout(() => {
+      if (navRef.current) {
+        const active = navRef.current.querySelector('.nav-item.is-active') as HTMLElement;
+        if (active) {
+          setActiveEl(active);
+          const navRect = navRef.current.getBoundingClientRect();
+          const rect = active.getBoundingClientRect();
+          setIndicator({ left: rect.left - navRect.left, width: rect.width, opacity: 1 });
+        } else {
+          setActiveEl(null);
+          setIndicator({ left: 0, width: 0, opacity: 0 });
+        }
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pathname]);
+
+  const handleNavMouseOver = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('.nav-item') as HTMLElement;
+    if (target && navRef.current) {
+      const navRect = navRef.current.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
+      setIndicator({ left: rect.left - navRect.left, width: rect.width, opacity: 1 });
+    }
+  };
+
+  const handleNavMouseLeave = () => {
+    if (activeEl && navRef.current) {
+      const navRect = navRef.current.getBoundingClientRect();
+      const rect = activeEl.getBoundingClientRect();
+      setIndicator({ left: rect.left - navRect.left, width: rect.width, opacity: 1 });
+    } else {
+      setIndicator(prev => ({ ...prev, opacity: 0 }));
+    }
+  };
+
+
+  /**
+   * Version « soft » (prod) : les 3 sections Learning (Learning AI / With AI / Edge)
+   * sont retirées de la nav au profit d'un unique pilier « Hi! Databootcamp »
+   * (dropdown défini ci-dessous, `DATABOOTCAMP_SECTION`).
+   * La configuration complète des piliers Learning est conservée sur la branche `full`.
+   */
+
+  /**
+   * Section institutionnelle « Hi! PARIS Education ».
+   * Regroupe les pages non pédagogiques (About us, NeuriPP…).
+   * Contrairement aux sections Learning, ses pages n'ont pas de préfixe d'URL
+   * commun : le surlignage actif s'appuie sur les hrefs des items (cf. `NavDropdown`).
+   */
+  const EDUCATION_SECTION = {
+    label:       t.nav.education.label,
+    slug:        "hi-paris-education",
+    description: t.nav.education.description,
+    items: [
+      { href: "/about",   icon: "🏛", label: t.nav.education.aboutUs, desc: t.nav.education.aboutUsDesc },
+      { href: "/neuripp", icon: "🚀", label: t.nav.education.neuripp, desc: t.nav.education.neurippDesc },
+    ],
+  };
+
+  /**
+   * Pilier « Hi! Databootcamp » (version soft/prod).
+   * Dropdown avec deux pages, toutes sous le préfixe d'URL `/databootcamp` :
+   *   - la page de présentation du bootcamp (contenu hi-paris.fr/data-bootcamp) ;
+   *   - la liste des cours du bootcamp (vide pour l'instant).
+   */
+  const DATABOOTCAMP_SECTION = {
+    label:       t.nav.databootcamp,
+    slug:        "databootcamp",
+    description: t.nav.databootcampMenu.description,
+    items: [
+      { href: "/databootcamp",         icon: "🚀", label: t.nav.databootcampMenu.bootcamp, desc: t.nav.databootcampMenu.bootcampDesc },
+      { href: "/databootcamp/courses", icon: "📚", label: t.nav.databootcampMenu.courses,  desc: t.nav.databootcampMenu.coursesDesc },
+    ],
+  };
+
+  /**
+   * Onglet « AIStuCon » - conférence blog-post étudiante Hi! PARIS.
+   * Dropdown : présentation de la conférence + exigences de soumission.
+   * Toutes les pages sont sous le préfixe d'URL `/conference`.
+   */
+  const CONFERENCE_SECTION = {
+    label:       t.nav.conference,
+    slug:        "conference",
+    description: t.nav.conferenceMenu.description,
+    items: [
+      { href: "/conference",            icon: "🎤", label: t.nav.conferenceMenu.overview,   desc: t.nav.conferenceMenu.overviewDesc },
+      { href: "/conference/submission", icon: "📝", label: t.nav.conferenceMenu.submission, desc: t.nav.conferenceMenu.submissionDesc },
+    ],
+  };
+
+  // ── Fermeture de tous les menus au changement de route ──
+  useEffect(() => {
+    setOpenDropdown(null);
+    setUserMenuOpen(false);
+  }, [pathname]);
+
+  // ── Fermeture du menu utilisateur au clic extérieur ──
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      // Ferme uniquement si le clic est en dehors du wrapper du menu utilisateur
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    // Nettoyage : retire le listener quand le composant est démonté
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  /**
+   * Bascule l'ouverture d'un NavDropdown Learning.
+   * - Si `slug` est déjà ouvert → ferme (set null)
+   * - Sinon → ouvre ce slug (ferme automatiquement l'ancien car on set la nouvelle valeur)
+   */
+  function handleDropdownOpen(slug: string) {
+    setOpenDropdown(slug);
+  }
+  function handleDropdownClose() {
+    setOpenDropdown(null);
+  }
+
+  /**
+   * Déconnexion de l'utilisateur.
+   * Appelle `logout()` du contexte Auth, puis redirige vers /login.
+   */
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
+
+  return (
+    <>
+      {/*
+       * Backdrop pour les NavDropdown Learning.
+       * Rendu uniquement si un dropdown Learning est ouvert.
+       * z-[150] : sous le header (z-[160]) pour ne pas bloquer le header lui-même,
+       * mais au-dessus du contenu de la page.
+       */}
+      {openDropdown && (
+        <div
+          className="fixed inset-0 z-[150]"
+          onClick={() => setOpenDropdown(null)}
+          aria-hidden="true"
+        />
+      )}
+
+      <header className="sticky top-0 z-[160] flex flex-col shadow-sm">
+        <div className="bg-white dark:bg-navy border-b border-gray-200 dark:border-white/10">
+          <div className="w-full px-4 h-[150px] flex items-center gap-2">
+
+          {/* ── Logo ── */}
+          <Link href="/" className="shrink-0 mr-4 flex items-center gap-3 select-none">
+            <img src="/icons/hi-paris-logo-blanc-bg.png" alt="Hi! PARIS Logo" className="h-[140px] w-auto dark:hidden" />
+            <img src="/icons/hi-paris-logo-bleu-bg.png" alt="Hi! PARIS Logo" className="h-[140px] w-auto hidden dark:block" />
+            <div className="flex items-baseline gap-0">
+              <span className="text-xl font-extrabold text-secondary tracking-tight">Hi!</span>
+              <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight"> PARIS Education</span>
+            </div>
+          </Link>
+
+          {/* ── Navigation principale (flex, scrollable sur petits écrans) ── */}
+          <nav
+            ref={navRef}
+            onMouseOver={handleNavMouseOver}
+            onMouseLeave={handleNavMouseLeave}
+            className="relative flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto h-full"
+          >
+            {/* Le Slider rouge animé */}
+            <div
+              className="absolute bottom-0 h-[3px] bg-secondary transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
+            />
+
+
+            {/* Lien direct Insights (pas de sous-menu) */}
+            <Link
+              href="/insights"
+              className={clsx(
+                "nav-item flex items-center px-3 py-5 text-base font-bold transition-colors whitespace-nowrap",
+                pathname.startsWith("/insights")
+                  ? "is-active text-secondary"
+                  : "text-gray-900 dark:text-white hover:text-secondary"
+              )}
+            >
+              {t.nav.insights}
+            </Link>
+
+            {/* Dropdown Hi! PARIS Education (About us, NeuriPP…) */}
+            <NavDropdown
+              {...EDUCATION_SECTION}
+              isOpen={openDropdown === EDUCATION_SECTION.slug}
+              onOpen={handleDropdownOpen} onClose={handleDropdownClose}
+            />
+
+            {/*
+             * Dropdown « Hi! Databootcamp » - version soft (prod).
+             * Deux pages : présentation du bootcamp + liste des cours.
+             * Remplace les 3 dropdowns Learning, conservés sur la branche `full`.
+             */}
+            <NavDropdown
+              {...DATABOOTCAMP_SECTION}
+              isOpen={openDropdown === DATABOOTCAMP_SECTION.slug}
+              onOpen={handleDropdownOpen} onClose={handleDropdownClose}
+            />
+
+            {/* Dropdown « AIStuCon » - présentation + submission requirements */}
+            <NavDropdown
+              {...CONFERENCE_SECTION}
+              isOpen={openDropdown === CONFERENCE_SECTION.slug}
+              onOpen={handleDropdownOpen} onClose={handleDropdownClose}
+            />
+
+            {/*
+             * Studio, LMS, Admin et « Mon parcours » ne sont plus dans la barre :
+             * ils vivent dans le menu déroulant de l'avatar (« Mon profil »).
+             */}
+          </nav>
+
+          {/* ── Zone droite : langue + auth ── */}
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+
+            {/* Switcher de langue FR / EN */}
+            <ThemeSwitcher />
+            <LangSwitcher />
+
+            {/*
+             * Branche authentification :
+             *   - user !== null → affiche le menu utilisateur (avatar + nom + rôle)
+             *   - user === null → affiche le bouton "Connexion"
+             */}
+            {user ? (
+              // ── Menu utilisateur (session active) ──
+              <div ref={userMenuRef} className="relative">
+                {/* Bouton déclencheur : avatar + nom + badge de rôle */}
+                {/* Déclencheur épuré : avatar + prénom + chevron.
+                    Email et rôle sont déplacés dans le panneau déroulant. */}
+                <button
+                  onClick={() => setUserMenuOpen((o) => !o)}
+                  aria-expanded={userMenuOpen}
+                  className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md  transition-colors"
+                >
+                  <Avatar name={`${user.first_name} ${user.last_name}`} size="sm" />
+                  <span className="hidden sm:inline text-sm font-semibold text-gray-900 dark:text-white max-w-[90px] truncate">
+                    {user.first_name}
+                  </span>
+                  <svg
+                    className={clsx("w-3 h-3 text-gray-900 dark:text-white transition-transform shrink-0", userMenuOpen && "rotate-180")}
+                    fill="currentColor" viewBox="0 0 20 20"
+                  >
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+
+                {/* Panneau du menu utilisateur (position absolute car dans un relative) */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-navy border border-gray-200 dark:border-primary/20 rounded-sm shadow-md overflow-hidden z-[200]">
+                    {/* En-tête : nom + badge de rôle, puis email */}
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <span className={clsx(
+                          "text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
+                          roleChip[user.role] ?? roleChip.student
+                        )}>
+                          {t.roles[user.role as keyof typeof t.roles] ?? user.role}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
+                    </div>
+
+                    {/* Compte */}
+                    <Link href="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200  hover:text-primary transition-colors">{t.nav.profile}</Link>
+                    <Link href="/my-learning" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200  hover:text-primary transition-colors">{t.nav.myLearning}</Link>
+
+                    {/* Enseignant (teacher+) */}
+                    {["teacher", "admin", "super_admin"].includes(user.role) && (
+                      <>
+                        <div className="border-t border-gray-100 dark:border-white/5" />
+                        <Link href="/studio" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200  hover:text-primary transition-colors">{t.nav.studio}</Link>
+                        <Link href="/lms" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200  hover:text-primary transition-colors">{t.nav.lms}</Link>
+                      </>
+                    )}
+
+                    {/* Administration (admin+) */}
+                    {["admin", "super_admin"].includes(user.role) && (
+                      <>
+                        <div className="border-t border-gray-100 dark:border-white/5" />
+                        <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200  hover:text-primary transition-colors">{t.nav.administration}</Link>
+                      </>
+                    )}
+
+                    {/* Séparateur puis déconnexion */}
+                    <div className="border-t border-gray-100 dark:border-white/5" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors"
+                    >
+                      {t.nav.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // ── Bouton Connexion (aucune session) ──
+              <Link
+                href="/login"
+                className="text-sm font-semibold bg-primary text-white px-4 py-2 rounded-sm hover:bg-primary-dark transition-colors shadow-sm shrink-0"
+              >
+                {t.nav.login}
+              </Link>
+            )}
+
+          </div>
+        </div>
+        </div>
+      </header>
+    </>
+  );
+}

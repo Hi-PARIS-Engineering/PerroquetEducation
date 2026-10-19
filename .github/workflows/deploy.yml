@@ -1,0 +1,107 @@
+name: CI/CD — Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── 1. Backend tests ──────────────────────────────────────────────────────
+  backend-tests:
+    name: Backend (Python / FastAPI)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+        env:
+          DATABASE_URL: "sqlite:///./test_hi_platform.db"
+          SECRET_KEY: "test-secret-key-not-for-production"
+          ALLOWED_DOMAINS: "polytechnique.edu,hec.fr"
+          ANTHROPIC_API_KEY: ""
+          OPENAI_API_KEY: ""
+          FRONTEND_URL: "http://localhost:3000"
+
+  # ── 2. Vérification du build frontend (lint + build, aucun déploiement) ───
+  #    Remplace l'ancien job GitHub Pages : garde le signal rouge/vert du build
+  #    sur push et PR, sans publier de maquette.
+  frontend-build:
+    name: "Frontend build check"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --legacy-peer-deps
+
+      - run: npm run lint
+
+      - run: npm run build
+        env:
+          NODE_ENV: production
+
+  # ── 3. Build + Deploy — Vercel (frontend avec backend) ────────────────────
+  #    Vercel CLI gère son propre build (lit NEXT_PUBLIC_API_URL depuis le
+  #    dashboard Vercel via `vercel pull`). Déploiement à la racine.
+  deploy-vercel:
+    name: "Deploy → Vercel"
+    needs: [backend-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --legacy-peer-deps
+
+      - name: Pull Vercel environment (env vars + project config)
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build via Vercel CLI
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy pre-built output
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -1,0 +1,299 @@
+/**
+ * @file (platform)/dashboard/page.tsx
+ * @description Page d'accueil de la plateforme "/dashboard".
+ *
+ * Structure de la page (de haut en bas) :
+ *
+ *   1. Section Hero - image de fond (Unsplash), dégradé navy/bleu, titre, description,
+ *      2 CTAs principaux ("Découvrir les Insights" + "Explorer les cours").
+ *
+ *   2. Highlight Banners - 3 cartes gradient superposées sur le bas du hero (z-10),
+ *      liens rapides vers Insights (rouge), Cours (bleu), Apps (gris).
+ *
+ *   3. Accès Rapide - grille 5 modules (Insights, Tube, Course, MOOC, App).
+ *      Titre personnalisé avec le prénom de l'utilisateur si connecté.
+ *
+ *   4. Derniers Insights - 3 premiers articles via `insightsApi.list()`.
+ *
+ *   5. Vidéos Populaires - 3 premières via `videosApi.list()` (VideoCard).
+ *
+ *   6. Cours Récents - 3 premiers via `coursesApi.list()` (CourseCard).
+ *
+ * Personnalisation :
+ *   `user.first_name` est injecté dans le titre de la section "Accès Rapide".
+ *   Si `user` est null (non connecté), le prénom est omis.
+ *
+ * Données : réelles (chargées côté client au montage). Plus aucune dépendance mock.
+ */
+
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
+import { VideoCard } from "@/components/platform/VideoCard";
+import { CourseCard } from "@/components/platform/CourseCard";
+import { coursesApi, videosApi, insightsApi, CourseResponse, VideoResponse, InsightResponse } from "@/lib/api";
+
+/**
+ * Page d'accueil du dashboard.
+ */
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+
+  // Contenu réel (3 premiers de chaque) - remplace les anciennes données mock.
+  const [insights, setInsights] = useState<InsightResponse[]>([]);
+  const [videos, setVideos] = useState<VideoResponse[]>([]);
+  const [courses, setCourses] = useState<CourseResponse[]>([]);
+  useEffect(() => {
+    insightsApi.list().then((r) => setInsights(r.slice(0, 3))).catch(() => {});
+    videosApi.list().then((r) => setVideos(r.slice(0, 3))).catch(() => {});
+    coursesApi.list().then((r) => setCourses(r.slice(0, 3))).catch(() => {});
+  }, []);
+
+  /**
+   * Modules d'accès rapide - 5 modules avec leur icône, couleur, et lien.
+   * `iconCls` : classes pour le fond de l'icône (couleur spécifique par module).
+   * `textCls` : couleur du texte/icône affichée dans le conteneur.
+   */
+  const modules = [
+    { name: t.dashboard.modules.insights.name, desc: t.dashboard.modules.insights.desc, icon: "🔬", href: "/insights", image: "/images/insigh.webp",     bg: "bg-gradient-to-br from-danger to-[#A01E2A]" },
+    { name: t.dashboard.modules.tube.name,     desc: t.dashboard.modules.tube.desc,     icon: "▶",  href: "/tube",     image: "/images/Hi! tube.png",  bg: "bg-gradient-to-br from-primary to-primary-dark" },
+    { name: t.dashboard.modules.course.name,   desc: t.dashboard.modules.course.desc,   icon: "📖", href: "/courses",  image: "/images/Course.webp",     bg: "bg-gradient-to-br from-primary to-primary-dark" },
+    { name: t.dashboard.modules.mooc.name,     desc: t.dashboard.modules.mooc.desc,     icon: "🎓", href: "/moocs",    image: "/images/Mooc.webp",       bg: "bg-gradient-to-br from-primary to-primary-dark" },
+    { name: t.dashboard.modules.app.name,      desc: t.dashboard.modules.app.desc,      icon: "⚡", href: "/apps",     image: "/images/App.webp",        bg: "bg-gradient-to-br from-gray-700 to-gray-900" },
+  ];
+
+  /**
+   * Bandeaux de mise en avant - 3 cartes gradient superposées sur le bas du hero.
+   * Chacune a une couleur de fond, un titre, une description et un CTA.
+   */
+  const highlightBanners = [
+    { title: t.dashboard.banners.insights.title, desc: t.dashboard.banners.insights.desc, href: "/insights", cta: t.dashboard.banners.insights.cta, image: "/images/research-process-journey.png", bg: "bg-gradient-to-br from-danger to-[#A01E2A]", icon: "🔬" },
+    { title: t.dashboard.banners.courses.title,  desc: t.dashboard.banners.courses.desc,  href: "/courses",  cta: t.dashboard.banners.courses.cta,  image: "/images/fondamentaux.jpg", bg: "bg-gradient-to-br from-primary to-primary-dark", icon: "📖" },
+    { title: t.dashboard.banners.apps.title,     desc: t.dashboard.banners.apps.desc,     href: "/apps",     cta: t.dashboard.banners.apps.cta,     image: "/images/tracking-1024x576.png", bg: "bg-gradient-to-br from-gray-700 to-gray-900", icon: "⚡" },
+  ];
+
+  return (
+    <>
+      {/* ── 1. Hero - image pleine largeur avec dégradé navy ── */}
+      <section className="relative w-full overflow-hidden" style={{ minHeight: 480 }}>
+        <img
+          src="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1600&q=80"
+          alt="Intelligence Artificielle"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Double dégradé : horizontal (navy → bleu) + vertical (transparent → navy) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/85 to-primary/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-6 py-24 flex flex-col justify-center">
+          {/* Badge "Hi! PARIS" */}
+          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur border border-white/25 text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 w-fit tracking-wide uppercase">
+            {t.dashboard.hero.badge}
+          </div>
+
+          {/* Titre avec accent coloré sur la deuxième ligne */}
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-4 max-w-2xl">
+            {t.dashboard.hero.title}<br />
+            <span className="text-[#6C9EF5]">{t.dashboard.hero.titleAccent}</span>
+          </h1>
+
+          <p className="text-lg text-white/75 max-w-xl mb-8 leading-relaxed">
+            {t.dashboard.hero.description}
+          </p>
+
+          {/* CTAs : Insights (rouge plein) + Cours (verre morphism) */}
+          <div className="flex items-center gap-4 flex-wrap">
+            <Link href="/insights" className="bg-danger text-white px-7 py-3 rounded-xl font-semibold text-base hover:bg-danger-dark transition-colors shadow-lg">
+              {t.dashboard.hero.discoverInsights}
+            </Link>
+            <Link href="/courses" className="bg-white/15 backdrop-blur border border-white/30 text-white px-7 py-3 rounded-xl font-semibold text-base hover:bg-white/25 transition-colors">
+              {t.dashboard.hero.exploreCourses}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2. Highlight Banners - superposés (-mt-10) sur le bas du hero ── */}
+      <section className="max-w-7xl mx-auto px-6 -mt-10 relative z-10 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {highlightBanners.map((b) => (
+            <Link
+              key={b.href}
+              href={b.href}
+              className={`group relative overflow-hidden rounded-2xl ${b.bg} p-6 hover:scale-[1.02] transition-transform duration-300 shadow-lg block`}
+            >
+              {/* Image en arrière-plan qui se fond dans la couleur de la div */}
+              <div className="absolute inset-0 z-0">
+                <img
+                  src={b.image}
+                  alt="" aria-hidden="true"
+                  className="w-full h-full object-cover opacity-20 group-hover:opacity-30 mix-blend-overlay transition-opacity duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              </div>
+              
+              {/* Contenu (z-10 pour rester au dessus du fond) - Rétabli avec l'ancien aspect statique en texte blanc */}
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="text-3xl mb-3" aria-hidden="true">{b.icon}</div>
+                <h3 className="text-base font-bold text-white mb-2 leading-snug">{b.title}</h3>
+                <p className="text-sm text-white/70 mb-4">{b.desc}</p>
+                <span className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors mt-auto">
+                  {b.cta} →
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 3. Accès Rapide - titre personnalisé si utilisateur connecté ── */}
+      <section className="max-w-7xl mx-auto px-6 mb-16">
+        {/* Branche connecté : "Bonjour, Prénom 👋" - Branche déconnecté : "Bonjour 👋" */}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">
+          {t.dashboard.greeting}{user ? `, ${user.first_name}` : ""} 👋
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {modules.map((m) => (
+            <Link
+              key={m.href}
+              href={m.href}
+              className="group relative overflow-hidden rounded-xl bg-gray-900 p-5 hover:scale-[1.02] transition-transform duration-300 shadow-card hover:shadow-card-hover block"
+            >
+              <div className="absolute inset-0 z-0">
+                {/* L'image au premier plan, très visible */}
+                <img
+                  src={m.image}
+                  alt="" aria-hidden="true"
+                  className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity duration-300"
+                />
+                {/* La couleur devient un filtre superposé très transparent */}
+                <div className={`absolute inset-0 ${m.bg} opacity-20 group-hover:opacity-30 mix-blend-multiply transition-opacity duration-300`} />
+                {/* Le dégradé sombre en bas pour que le texte blanc reste lisible */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              </div>
+
+              {/* Contenu textuel */}
+              <div className="relative z-10 flex flex-col h-full">
+                <div className={`w-10 h-10 bg-white/10 border-white/20 border rounded-lg flex items-center justify-center text-xl mb-3 shadow-sm`}>
+                  {m.icon}
+                </div>
+                <p className="text-sm font-semibold text-white transition-colors leading-tight">{m.name}</p>
+                <p className="text-xs text-white/80 mt-1">{m.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 4. Derniers Insights - 3 premiers articles ── */}
+      <section className="max-w-7xl mx-auto px-6 mb-16">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.dashboard.sections.latestInsights}</h2>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t.dashboard.sections.insightsSubtitle}</p>
+          </div>
+          <Link href="/insights" className="text-sm text-danger hover:text-danger-dark transition-colors font-semibold">
+            {t.common.seeAll} →
+          </Link>
+        </div>
+        {insights.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Aucun article pour l'instant.</p>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {insights.map((article) => (
+            <Link
+              key={article.id}
+              href={`/insights/${article.id}`}
+              className="group bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden hover:border-primary/30 hover:shadow-card-hover transition-all shadow-card"
+            >
+              {/* Couverture avec badge catégorie et dégradé sombre */}
+              <div className="relative h-40 overflow-hidden bg-navy">
+                {article.cover && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={article.cover} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                {article.category && (
+                  <span className="absolute top-3 left-3 text-xs font-semibold bg-danger text-white px-2.5 py-0.5 rounded-full">
+                    {article.category}
+                  </span>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                  {article.title}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 line-clamp-2 mb-3">{article.abstract}</p>
+                {/* Tags - 2 premiers uniquement */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {article.tags.slice(0, 2).map((tag) => (
+                    <span key={tag} className="text-xs bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 text-gray-500 dark:text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+                {/* Pied : auteur principal à gauche, temps de lecture + école à droite */}
+                <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-white/5 pt-2.5">
+                  <span>{article.authors[0]}</span>
+                  <span>{article.read_time} {t.common.min} · {article.school}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 5. Vidéos Populaires - 3 premières vidéos ── */}
+      <section className="max-w-7xl mx-auto px-6 mb-16">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.dashboard.sections.popularVideos}</h2>
+          <Link href="/tube" className="text-sm text-primary hover:text-primary-dark transition-colors font-semibold">
+            {t.common.seeAll} →
+          </Link>
+        </div>
+        {videos.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Aucune vidéo pour l'instant.</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {videos.map((v) => (
+            <VideoCard
+              key={v.id}
+              id={v.id}
+              title={v.title}
+              youtube_id={v.youtube_id}
+              thumbnail_url={v.thumbnail_url}
+              category={v.category}
+              school={v.school}
+              tags={v.tags}
+              view_count={v.view_count}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── 6. Cours Récents - 3 premiers cours ── */}
+      <section className="max-w-7xl mx-auto px-6 pb-20">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.dashboard.sections.recentCourses}</h2>
+          <Link href="/courses" className="text-sm text-primary hover:text-primary-dark transition-colors font-semibold">
+            {t.common.seeAll} →
+          </Link>
+        </div>
+        {courses.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Aucun cours pour l'instant.</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {courses.map((c) => (
+            <CourseCard
+              key={c.id}
+              id={c.id}
+              title={c.title}
+              description={c.description ?? undefined}
+              category={c.category ?? undefined}
+              level={c.level}
+              school={c.school ?? undefined}
+              estimated_duration_minutes={c.estimated_duration_minutes}
+              status={c.status}
+            />
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
