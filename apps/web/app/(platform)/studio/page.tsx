@@ -53,6 +53,21 @@ import {
   ListTree,
   Plus,
   X as IconX,
+  History as IconHistory,
+  UserCheck as IconAuthor,
+  Users as IconUsers,
+  ChevronRight,
+  LayoutGrid,
+  Square,
+  SquareDashed,
+  AlertTriangle,
+  Info,
+  BookOpen,
+  Check,
+  KeyRound,
+  RotateCw,
+  AlertCircle,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -212,7 +227,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "callout",
     label: "Encadré pédagogique",
-    icon: "💡",
+    icon: "!",
     category: "content",
     desc: "Info, Attention, Astuce ou Définition",
     defaultContent: () => ({ variant: "tip", title: "À retenir", content: "Point clé essentiel pour comprendre la suite." }),
@@ -220,7 +235,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "quote",
     label: "Citation & Référence",
-    icon: "❝",
+    icon: "\"",
     category: "content",
     desc: "Citation d'expert ou papier de recherche",
     defaultContent: () => ({ quote: "L'apprentissage profond extrait automatiquement des représentations hiérarchiques.", author: "Yann LeCun", source: "Nature (2015)" }),
@@ -232,6 +247,23 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
     category: "content",
     desc: "Ligne de démarcation élégante",
     defaultContent: () => ({ label: "Section suivante" }),
+  },
+  {
+    type: "history",
+    label: "Point d'histoire",
+    icon: "H",
+    category: "content",
+    desc: "Récit & portrait historique déroulant avec image toujours visible",
+    defaultContent: () => ({
+      title: "George Edward Pelham Box (1919-2013)",
+      subtitle: "Point d'histoire — Fondements statistiques",
+      era: "1919-2013",
+      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a2/George_EP_Box.jpg",
+      caption: "Portrait de George Edward Pelham Box",
+      quote: "« Tous les modèles sont faux, mais certains sont utiles. » — George Box (1976)",
+      content: "Statisticien britannique de renom, George Box a révolutionné l'analyse des séries temporelles (méthode de Box-Jenkins) et la modélisation statistique moderne.\n\nDurant la Seconde Guerre mondiale, affecté au centre de recherche de Porton Down, il s'est tourné vers les statistiques pour interpréter les résultats d'essais biochimiques. Ses travaux pionniers à Princeton puis à l'Université du Wisconsin ont posé les fondements des plans d'expérience et de l'approche itérative en science des données.",
+      defaultOpen: false,
+    }),
   },
 
   // 2. Code, Maths & Données
@@ -269,7 +301,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "dataset",
     label: "Dataset & Fichier",
-    icon: "📎",
+    icon: "D",
     category: "tech",
     desc: "Jeu de données CSV, Kaggle ou Notebook",
     defaultContent: () => ({ title: "Jeu de données d'entraînement", url: "https://huggingface.co/datasets/...", format: "CSV / Parquet", description: "Contient 10 000 lignes annotées pour l'exercice pratique." }),
@@ -287,7 +319,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "image",
     label: "Schéma & Illustration",
-    icon: "🖼",
+    icon: "IMG",
     category: "media",
     desc: "Schéma explicatif ou graphique",
     defaultContent: () => ({ content: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", caption: "Architecture réseau de neurones multicouches", alt: "Schéma d'architecture" }),
@@ -295,7 +327,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "audio",
     label: "Capsule Audio / Podcast",
-    icon: "🎙",
+    icon: "AUD",
     category: "media",
     desc: "Explication audio courte ou interview",
     defaultContent: () => ({ title: "Point de vue du chercheur", duration: "03:45", url: "" }),
@@ -303,7 +335,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "embed",
     label: "Outil externe / Iframe",
-    icon: "⚡",
+    icon: "WEB",
     category: "media",
     desc: "Démonstrateur Streamlit, Colab, HuggingFace",
     defaultContent: () => ({ url: "https://streamlit.io", title: "Application de test interactif" }),
@@ -326,7 +358,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "truefalse",
     label: "Question Vrai / Faux",
-    icon: "✓/✗",
+    icon: "V/F",
     category: "eval",
     desc: "Test de compréhension binaire rapide",
     defaultContent: () => ({
@@ -338,7 +370,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "exercise",
     label: "Exercice & Solution",
-    icon: "🎯",
+    icon: "EX",
     category: "eval",
     desc: "Énoncé pratique avec indice et solution masquée",
     defaultContent: () => ({
@@ -351,7 +383,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "flashcard",
     label: "Carte mémoire (Flashcard)",
-    icon: "🗂",
+    icon: "FC",
     category: "eval",
     desc: "Recto / Verso pour mémoriser les définitions",
     defaultContent: () => ({
@@ -365,7 +397,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "summary",
     label: "Points clés à retenir",
-    icon: "★",
+    icon: "SUM",
     category: "summary",
     desc: "Fiche récapitulative des acquis du cours",
     defaultContent: () => ({
@@ -380,7 +412,7 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
   {
     type: "resources",
     label: "Ressources & Références",
-    icon: "📚",
+    icon: "RES",
     category: "summary",
     desc: "Liens vers articles ArXiv, livres et documentation",
     defaultContent: () => ({
@@ -390,15 +422,39 @@ const ALL_BLOCK_TYPES: BlockDefinition[] = [
       ],
     }),
   },
+  {
+    type: "author",
+    label: "Auteurs du cours",
+    icon: "AUT",
+    category: "summary",
+    desc: "Fiche enseignant / chercheur avec photo, biographie et flanc latéral",
+    defaultContent: () => ({
+      badgeTitle: "Meet the Author",
+      layout: "sidebar-right", // "sidebar-right" | "sidebar-left" | "inline"
+      authors: [
+        {
+          name: "Emmanuel Coblence",
+          role: "Professor (Education Track) and Associate Dean for Pedagogy at HEC Paris",
+          institution: "HEC Paris",
+          photo: "https://hec-prod-drupalfiles.oos.cloudgouv-eu-west-1.outscale.com/s3fs-public/styles/knowledge_profile_vignette/public/2025-06/emmanuel%20coblence.jpg?itok=DviurG82",
+          bio: "Emmanuel Coblence is Professor (Education Track) and Associate Dean for Pedagogy at HEC Paris. His teaching areas are leadership, organizational theories, change management, and political skills in organizations. He teaches in the Executive MBA program for which he coordinates the leadership course.",
+          linkText: "More About the Author",
+          linkUrl: "https://www.hec.edu/en/faculty-research/faculty-directory/faculty-member/coblence-emmanuel",
+          socialLinkedin: "https://linkedin.com",
+          socialEmail: "coblence@hec.fr",
+        },
+      ],
+    }),
+  },
 ];
 
 const CATEGORY_TABS: { key: BlockCategory; label: string }[] = [
-  { key: "all", label: "Tous (19)" },
-  { key: "content", label: "Contenu (5)" },
+  { key: "all", label: "Tous (21)" },
+  { key: "content", label: "Contenu (6)" },
   { key: "tech", label: "Code & Maths (4)" },
   { key: "media", label: "Médias (4)" },
   { key: "eval", label: "Évaluation (4)" },
-  { key: "summary", label: "Synthèse (2)" },
+  { key: "summary", label: "Synthèse (3)" },
 ];
 
 // ─── Configuration Ruban de type Word & Outils Studio ─────────────────────────
@@ -419,6 +475,7 @@ const BLOCK_SHORTCUTS: Record<string, string> = {
   quote: "Alt + 3",
   callout: "Alt + 4",
   divider: "Alt + 5",
+  history: "Alt + H",
   code: "Alt + C",
   math: "Alt + M",
   table: "Alt + T",
@@ -433,6 +490,7 @@ const BLOCK_SHORTCUTS: Record<string, string> = {
   flashcard: "Alt + K",
   summary: "Alt + S",
   resources: "Alt + R",
+  author: "Alt + U",
 };
 
 const BLOCK_ICONS: Record<string, LucideIcon> = {
@@ -441,6 +499,7 @@ const BLOCK_ICONS: Record<string, LucideIcon> = {
   quote: IconQuote,
   callout: IconLightbulb,
   divider: IconMinus,
+  history: IconHistory,
   code: IconCode2,
   math: IconSigma,
   table: IconTable,
@@ -455,7 +514,25 @@ const BLOCK_ICONS: Record<string, LucideIcon> = {
   flashcard: LucideSparkles,
   summary: IconStar,
   resources: IconLibrary,
+  author: IconAuthor,
 };
+
+// ─── Configuration du Quadrillage de Test (12 Colonnes Multicolores & Zones) ───
+
+const DEBUG_GRID_COLUMNS = [
+  { id: 1,  name: "C1",  zone: "A (Gauche)", bg: "bg-red-500/20",     border: "border-red-500",     text: "text-red-700 dark:text-red-300",     badge: "bg-red-500 text-white" },
+  { id: 2,  name: "C2",  zone: "A (Gauche)", bg: "bg-orange-500/20",  border: "border-orange-500",  text: "text-orange-700 dark:text-orange-300",  badge: "bg-orange-500 text-white" },
+  { id: 3,  name: "C3",  zone: "A (Gauche)", bg: "bg-amber-500/20",   border: "border-amber-500",   text: "text-amber-700 dark:text-amber-300",   badge: "bg-amber-500 text-white" },
+  { id: 4,  name: "C4",  zone: "B (Centre)", bg: "bg-yellow-500/20",  border: "border-yellow-500",  text: "text-yellow-800 dark:text-yellow-200", badge: "bg-yellow-500 text-black" },
+  { id: 5,  name: "C5",  zone: "B (Centre)", bg: "bg-lime-500/20",    border: "border-lime-500",    text: "text-lime-700 dark:text-lime-300",    badge: "bg-lime-500 text-black" },
+  { id: 6,  name: "C6",  zone: "B (Centre)", bg: "bg-emerald-500/20", border: "border-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badge: "bg-emerald-500 text-white" },
+  { id: 7,  name: "C7",  zone: "B (Centre)", bg: "bg-teal-500/20",    border: "border-teal-500",    text: "text-teal-700 dark:text-teal-300",    badge: "bg-teal-500 text-white" },
+  { id: 8,  name: "C8",  zone: "B (Centre)", bg: "bg-cyan-500/20",    border: "border-cyan-500",    text: "text-cyan-700 dark:text-cyan-300",    badge: "bg-cyan-500 text-white" },
+  { id: 9,  name: "C9",  zone: "B (Centre)", bg: "bg-sky-500/20",     border: "border-sky-500",     text: "text-sky-700 dark:text-sky-300",     badge: "bg-sky-500 text-white" },
+  { id: 10, name: "C10", zone: "C (Droite)", bg: "bg-indigo-500/20",  border: "border-indigo-500",  text: "text-indigo-700 dark:text-indigo-300",  badge: "bg-indigo-500 text-white" },
+  { id: 11, name: "C11", zone: "C (Droite)", bg: "bg-purple-500/20",  border: "border-purple-500",  text: "text-purple-700 dark:text-purple-300",  badge: "bg-purple-500 text-white" },
+  { id: 12, name: "C12", zone: "C (Droite)", bg: "bg-pink-500/20",    border: "border-pink-500",    text: "text-pink-700 dark:text-pink-300",    badge: "bg-pink-500 text-white" },
+];
 
 function RibbonLargeButton({
   icon: Icon,
@@ -465,6 +542,7 @@ function RibbonLargeButton({
   isActive,
   disabled,
   destructive,
+  iconColor,
 }: {
   icon: LucideIcon;
   label: string;
@@ -473,6 +551,7 @@ function RibbonLargeButton({
   isActive?: boolean;
   disabled?: boolean;
   destructive?: boolean;
+  iconColor?: string;
 }) {
   return (
     <button
@@ -488,19 +567,19 @@ function RibbonLargeButton({
           ? "border-transparent hover:border-danger/30 hover:bg-danger/10 text-gray-700 dark:text-gray-300 hover:text-danger focus-visible:ring-danger"
           : isActive
           ? "bg-[#0B2F5E]/10 dark:bg-white/15 border-[#0B2F5E]/30 text-[#0B2F5E] dark:text-white font-bold"
-          : "border-transparent hover:border-[#0B2F5E]/20 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 hover:text-[#0B2F5E] dark:hover:text-white focus-visible:ring-primary"
+          : "border-transparent hover:border-gray-200 dark:hover:border-white/10 hover:bg-gray-100/70 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 hover:text-[#0B2F5E] dark:hover:text-white focus-visible:ring-primary"
       }`}
     >
       <div className="flex-1 flex items-center justify-center">
         <Icon
-          className={`w-6 h-6 transition-transform group-hover:scale-110 ${
+          className={`w-5 h-5 transition-transform group-hover:scale-105 ${
             destructive
               ? "text-gray-500 group-hover:text-danger"
               : isActive
               ? "text-[#0B2F5E] dark:text-white"
-              : "text-[#0B2F5E] dark:text-blue-300"
+              : iconColor || "text-[#0B2F5E] dark:text-blue-300"
           }`}
-          strokeWidth={1.8}
+          strokeWidth={1.75}
         />
       </div>
       <span className="text-[11px] font-medium leading-tight text-center line-clamp-2">
@@ -516,12 +595,14 @@ function RibbonSmallButton({
   shortcut,
   onClick,
   disabled,
+  iconColor,
 }: {
   icon: LucideIcon;
   label: string;
   shortcut?: string;
   onClick: () => void;
   disabled?: boolean;
+  iconColor?: string;
 }) {
   return (
     <button
@@ -532,10 +613,10 @@ function RibbonSmallButton({
       className={`flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent transition-all cursor-pointer text-[11px] font-medium focus-visible:ring-2 focus-visible:ring-primary select-none whitespace-nowrap ${
         disabled
           ? "opacity-35 cursor-not-allowed"
-          : "hover:border-[#0B2F5E]/20 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 hover:text-[#0B2F5E] dark:hover:text-white"
+          : "hover:border-gray-200 dark:hover:border-white/10 hover:bg-gray-100/70 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-[#0B2F5E] dark:hover:text-white"
       }`}
     >
-      <Icon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" strokeWidth={1.8} />
+      <Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor || "text-gray-500 dark:text-gray-400"}`} strokeWidth={1.75} />
       <span>{label}</span>
     </button>
   );
@@ -575,12 +656,42 @@ function CourseEditor() {
     { id: 1, type: "heading", content: { content: "1. Introduction aux Réseaux de Neurones", level: "h2" } },
     { id: 2, type: "callout", content: { variant: "tip", title: "Objectif pédagogique", content: "À la fin de ce cours, vous maîtriserez les architectures denses et la rétropropagation du gradient." } },
     { id: 3, type: "text", content: { content: "Les réseaux de neurones artificiels sont des modèles d'apprentissage statistique inspirés du fonctionnement des neurones biologiques. Ils permettent d'approximer des fonctions non-linéaires complexes." } },
-    { id: 4, type: "code", content: { language: "python", content: "import torch\nimport torch.nn as nn\n\n# Définition d'un perceptron multicouche\nmodel = nn.Sequential(\n    nn.Linear(784, 128),\n    nn.ReLU(),\n    nn.Linear(128, 10)\n)\nprint(model)" } },
-    { id: 5, type: "quiz", content: {
+    { id: 4, type: "history", content: {
+      title: "George Edward Pelham Box (1919-2013)",
+      subtitle: "Point d'histoire — Fondements statistiques",
+      era: "1919-2013",
+      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a2/George_EP_Box.jpg",
+      caption: "Portrait de George Edward Pelham Box",
+      quote: "« Tous les modèles sont faux, mais certains sont utiles. » — George Box (1976)",
+      content: "Statisticien britannique de renom, George Box a révolutionné l'analyse des séries temporelles (méthode de Box-Jenkins) et la modélisation statistique.\n\nSes contributions majeures démontrent qu'un modèle mathématique n'a pas vocation à être une réplique parfaite de la réalité physique, mais une approximation pragmatique capable de guider l'analyse et la prédiction avec rigueur.",
+      defaultOpen: true,
+    } },
+    { id: 5, type: "divider", content: { label: "Partie II : Implémentation & Architecture" } },
+    { id: 6, type: "heading", content: { content: "2. Architecture d'un Perceptron Multicouche", level: "h2" } },
+    { id: 7, type: "heading", content: { content: "Fonction d'activation et non-linéarité", level: "h3" } },
+    { id: 8, type: "code", content: { language: "python", content: "import torch\nimport torch.nn as nn\n\n# Définition d'un perceptron multicouche\nmodel = nn.Sequential(\n    nn.Linear(784, 128),\n    nn.ReLU(),\n    nn.Linear(128, 10)\n)\nprint(model)" } },
+    { id: 9, type: "quiz", content: {
       question: "Pourquoi applique-t-on une fonction d'activation non-linéaire (ex: ReLU) entre chaque couche ?",
       options: ["Pour réduire le temps d'entraînement", "Pour permettre au réseau d'apprendre des relations non-linéaires", "Pour forcer les poids à être positifs", "Pour diviser par deux la taille des paramètres"],
       answer: 1,
       explanation: "Sans fonction non-linéaire, l'empilement de couches linéaires reste strictement équivalent à une seule transformation linéaire.",
+    } },
+    { id: 10, type: "author", content: {
+      badgeTitle: "Meet the Author",
+      layout: "sidebar-right",
+      authors: [
+        {
+          name: "Emmanuel Coblence",
+          role: "Professor (Education Track) and Associate Dean for Pedagogy at HEC Paris",
+          institution: "HEC Paris",
+          photo: "https://hec-prod-drupalfiles.oos.cloudgouv-eu-west-1.outscale.com/s3fs-public/styles/knowledge_profile_vignette/public/2025-06/emmanuel%20coblence.jpg?itok=DviurG82",
+          bio: "Emmanuel Coblence is Professor (Education Track) and Associate Dean for Pedagogy at HEC Paris. His teaching areas are leadership, organizational theories, change management, and political skills in organizations. He teaches in the Executive MBA program for which he coordinates the leadership course.",
+          linkText: "More About the Author",
+          linkUrl: "https://www.hec.edu/en/faculty-research/faculty-directory/faculty-member/coblence-emmanuel",
+          socialLinkedin: "https://linkedin.com",
+          socialEmail: "coblence@hec.fr",
+        },
+      ],
     } },
   ]);
 
@@ -600,6 +711,104 @@ function CourseEditor() {
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  // Option pour retirer ou afficher les contours du feed (par défaut sans contours pour un feed épuré)
+  const [showFeedBorders, setShowFeedBorders] = useState(false);
+
+  // Option pour afficher un Sommaire Dynamique ("left" = haut gauche, "right" = haut droit, "none" = masqué)
+  type TocPlacement = "left" | "right" | "none";
+  const [tocPlacement, setTocPlacement] = useState<TocPlacement>("left");
+
+  // État du quadrillage de repérage (désactivé)
+  const [showDebugGrid, setShowDebugGrid] = useState(false);
+  const [gridOverlayMode, setGridOverlayMode] = useState<"all" | "columns" | "zones">("all");
+  const [gridLegendOpen, setGridLegendOpen] = useState(false);
+
+  // Repères du Sommaire dynamique générés à partir des titres, sous-titres et découpes de sections
+  const tocItems = useMemo(() => {
+    const list: {
+      id: number;
+      type: "heading" | "divider";
+      level?: "h1" | "h2" | "h3";
+      title: string;
+      blockIndex: number;
+    }[] = [];
+
+    blocks.forEach((b, idx) => {
+      if (b.type === "heading") {
+        const txt = cstr(b.content, "content").trim();
+        const lvl = (cstr(b.content, "level") || "h2") as "h1" | "h2" | "h3";
+        list.push({
+          id: b.id,
+          type: "heading",
+          level: lvl,
+          title: txt || `Titre (${lvl.toUpperCase()}) sans nom`,
+          blockIndex: idx,
+        });
+      } else if (b.type === "divider") {
+        const lbl = cstr(b.content, "label").trim();
+        list.push({
+          id: b.id,
+          type: "divider",
+          title: lbl || "Découpe de section",
+          blockIndex: idx,
+        });
+      }
+    });
+
+    return list;
+  }, [blocks]);
+
+  // Section active du cours détectée dynamiquement au défilement
+  const [activeSectionBlockId, setActiveSectionBlockId] = useState<number | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (tocItems.length === 0) return;
+
+    function handleScroll() {
+      setIsScrolled(window.scrollY > 80);
+
+      const offset = 220; // Dégagement sous le ruban/dock sticky
+      let currentId = tocItems[0]?.id ?? null;
+
+      for (let i = 0; i < tocItems.length; i++) {
+        const item = tocItems[i];
+        const el = document.getElementById(`block-${item.id}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= offset) {
+          currentId = item.id;
+        } else {
+          break;
+        }
+      }
+
+      setActiveSectionBlockId(currentId);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [tocItems]);
+
+  function scrollToBlock(blockId: number) {
+    setSelectedBlockId(blockId);
+    setActiveSectionBlockId(blockId);
+    const el = document.getElementById(`block-${blockId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  // Auteurs configurés pour les flancs latéraux extérieurs (gauche / droit) ou dans le cours
+  const leftAuthorBlocks = blocks.filter(
+    (b) => b.type === "author" && cstr(b.content, "layout") === "sidebar-left"
+  );
+  const rightAuthorBlocks = blocks.filter(
+    (b) => b.type === "author" && (cstr(b.content, "layout") === "sidebar-right" || !cstr(b.content, "layout"))
+  );
+  const flankAuthorBlocks = [...leftAuthorBlocks, ...rightAuthorBlocks];
 
   // États pour les composants interactifs en mode prévisualisation
   const [previewQuizAnswer, setPreviewQuizAnswer] = useState<Record<number, number>>({});
@@ -737,10 +946,67 @@ function CourseEditor() {
         action: () => { publish(); setRibbonSearch(""); },
       });
     }
+    if ("histoire".includes(q) || "box".includes(q) || "biographie".includes(q) || "récit".includes(q) || "portrait".includes(q)) {
+      if (!matches.some((m) => m.id === "block-history")) {
+        matches.push({
+          id: "block-history",
+          label: "Insérer : Point d'histoire",
+          desc: "Accordéon déroulant avec portrait visible et récit",
+          icon: IconHistory,
+          action: () => { addBlock("history"); setRibbonSearch(""); },
+        });
+      }
+    }
+    if ("auteur".includes(q) || "coblence".includes(q) || "professeur".includes(q) || "flan".includes(q) || "sidebar".includes(q) || "meet".includes(q) || "enseignant".includes(q)) {
+      if (!matches.some((m) => m.id === "block-author")) {
+        matches.push({
+          id: "block-author",
+          label: "Insérer : Fiche Auteur(s)",
+          desc: "Fiche enseignant avec photo, bio et flanc latéral",
+          icon: IconAuthor,
+          action: () => { addBlock("author"); setRibbonSearch(""); },
+        });
+      }
+    }
+    if ("contour".includes(q) || "bordure".includes(q) || "cadre".includes(q) || "border".includes(q)) {
+      matches.push({
+        id: "toggle-feed-borders",
+        label: showFeedBorders ? "Retirer les contours du feed" : "Afficher les contours du feed",
+        desc: "Active ou désactive les bordures et ombres du flux de cours",
+        icon: showFeedBorders ? SquareDashed : Square,
+        action: () => {
+          setShowFeedBorders((v) => !v);
+          setRibbonSearch("");
+        },
+      });
+    }
+    if ("sommaire".includes(q) || "table".includes(q) || "matiere".includes(q) || "plan".includes(q) || "section".includes(q) || "toc".includes(q)) {
+      matches.push({
+        id: "toc-left",
+        label: "Sommaire : Flanc gauche (haut gauche)",
+        desc: "Afficher le sommaire dynamique sur le flanc extérieur gauche",
+        icon: ListTree,
+        action: () => { setTocPlacement("left"); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "toc-right",
+        label: "Sommaire : Flanc droit (haut droit)",
+        desc: "Afficher le sommaire dynamique sur le flanc extérieur droit",
+        icon: ListTree,
+        action: () => { setTocPlacement("right"); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "toc-none",
+        label: "Sommaire : Masquer",
+        desc: "Masquer le sommaire dynamique des flancs",
+        icon: IconX,
+        action: () => { setTocPlacement("none"); setRibbonSearch(""); },
+      });
+    }
 
     return matches;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ribbonSearch, blocks, selectedBlockId]);
+  }, [ribbonSearch, blocks, selectedBlockId, showFeedBorders, tocPlacement]);
 
   function setContent(id: number, content: Record<string, unknown>) {
     setBlocks((b) => b.map((bl) => (bl.id === id ? { ...bl, content } : bl)));
@@ -811,7 +1077,7 @@ function CourseEditor() {
         return {
           type: "markdown",
           content: {
-            content: `### 🎯 Exercice : ${cstr(b.content, "title")}\n\n${cstr(b.content, "instruction")}\n\n> 💡 **Indice :** ${cstr(b.content, "hint")}\n\n**Solution :** ${cstr(b.content, "solution")}`,
+            content: `### Exercice : ${cstr(b.content, "title")}\n\n${cstr(b.content, "instruction")}\n\n> **Indice :** ${cstr(b.content, "hint")}\n\n**Solution :** ${cstr(b.content, "solution")}`,
           },
         };
       }
@@ -819,14 +1085,14 @@ function CourseEditor() {
         const points = carr(b.content, "points").map((p) => `- ${p}`).join("\n");
         return {
           type: "markdown",
-          content: { content: `### ★ ${cstr(b.content, "title") || "Points clés à retenir"}\n\n${points}` },
+          content: { content: `### ${cstr(b.content, "title") || "Points clés à retenir"}\n\n${points}` },
         };
       }
       if (b.type === "dataset") {
         return {
           type: "markdown",
           content: {
-            content: `📦 **Jeu de données : [${cstr(b.content, "title")}](${cstr(b.content, "url")})** (${cstr(b.content, "format")})\n\n${cstr(b.content, "description")}`,
+            content: `**Jeu de données : [${cstr(b.content, "title")}](${cstr(b.content, "url")})** (${cstr(b.content, "format")})\n\n${cstr(b.content, "description")}`,
           },
         };
       }
@@ -834,7 +1100,7 @@ function CourseEditor() {
         return {
           type: "markdown",
           content: {
-            content: `🗂️ **Concept [${cstr(b.content, "category")}] :** ${cstr(b.content, "front")}\n\n**Définition :** ${cstr(b.content, "back")}`,
+            content: `**Concept [${cstr(b.content, "category")}] :** ${cstr(b.content, "front")}\n\n**Définition :** ${cstr(b.content, "back")}`,
           },
         };
       }
@@ -855,6 +1121,32 @@ function CourseEditor() {
       }
       if (b.type === "divider") {
         return { type: "divider", content: {} };
+      }
+      if (b.type === "history") {
+        const sub = cstr(b.content, "subtitle") || "Point d'histoire";
+        const tit = cstr(b.content, "title");
+        const img = cstr(b.content, "imageUrl");
+        const qte = cstr(b.content, "quote");
+        const txt = cstr(b.content, "content");
+        return {
+          type: "markdown",
+          content: {
+            content: `### ${sub} : ${tit}\n\n${img ? `![${tit}](${img})\n\n` : ""}${qte ? `> ${qte}\n\n` : ""}${txt}`,
+          },
+        };
+      }
+      if (b.type === "author") {
+        const badge = cstr(b.content, "badgeTitle") || "Meet the Author";
+        const authorsArr = Array.isArray(b.content.authors)
+          ? (b.content.authors as { name?: string; role?: string; institution?: string; bio?: string; linkUrl?: string; linkText?: string }[])
+          : [];
+        const authorDesc = authorsArr
+          .map((a) => `**${a.name || "Auteur"}** — *${a.role || ""}* (${a.institution || ""})\n\n${a.bio || ""}\n\n[${a.linkText || "En savoir plus"}](${a.linkUrl || "#"})`)
+          .join("\n\n---\n\n");
+        return {
+          type: "markdown",
+          content: { content: `### ${badge}\n\n${authorDesc}` },
+        };
       }
 
       // Par défaut : heading ou text
@@ -897,11 +1189,216 @@ function CourseEditor() {
     setTimeout(() => setCopiedCodeId(null), 2000);
   }
 
+  function renderTableOfContents() {
+    if (tocItems.length === 0) return null;
+
+    return (
+      <nav aria-label="Sommaire du cours" className="text-xs py-1 pr-2 select-none">
+        {/* En-tête sobre en texte seul */}
+        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 pb-1 border-b border-gray-200/50 dark:border-white/5">
+          <span>Sommaire</span>
+          <div className="flex items-center gap-1.5 lowercase font-normal opacity-0 hover:opacity-100 transition-opacity text-[10px]">
+            <button
+              type="button"
+              onClick={() => setTocPlacement(tocPlacement === "left" ? "right" : "left")}
+              className="hover:text-gray-900 dark:hover:text-white cursor-pointer"
+              title={tocPlacement === "left" ? "Déplacer sur le flanc droit" : "Déplacer sur le flanc gauche"}
+            >
+              {tocPlacement === "left" ? "→ droite" : "← gauche"}
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setTocPlacement("none")}
+              className="hover:text-danger cursor-pointer"
+              title="Masquer le sommaire"
+            >
+              masquer
+            </button>
+          </div>
+        </div>
+
+        {/* Liste des sections : texte seul & changement de couleur à la section active */}
+        <div className="space-y-1 max-h-[calc(100vh-220px)] overflow-y-auto pr-1 scrollbar-none">
+          {tocItems.map((item) => {
+            const isActive = activeSectionBlockId === item.id;
+            const isH1 = item.level === "h1";
+            const isH3 = item.level === "h3";
+
+            if (item.type === "divider") {
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => scrollToBlock(item.id)}
+                  className={`w-full text-left py-0.5 text-[11px] transition-colors cursor-pointer block truncate ${
+                    isActive
+                      ? "text-primary dark:text-blue-400 font-bold"
+                      : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 italic"
+                  }`}
+                  title={item.title}
+                >
+                  — {item.title}
+                </button>
+              );
+            }
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => scrollToBlock(item.id)}
+                className={`w-full text-left py-0.5 transition-colors cursor-pointer block truncate leading-snug ${
+                  isH3
+                    ? "pl-4 text-[11px]"
+                    : isH1
+                    ? "text-xs font-medium"
+                    : "pl-2 text-xs"
+                } ${
+                  isActive
+                    ? "text-primary dark:text-blue-400 font-bold"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+                title={item.title}
+              >
+                {item.title}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
+
+  function renderAuthorCard(b: EditorBlock) {
+    type AuthorItem = {
+      name: string;
+      role: string;
+      institution: string;
+      photo: string;
+      bio: string;
+      linkText: string;
+      linkUrl: string;
+      socialLinkedin?: string;
+      socialEmail?: string;
+    };
+    const rawAuthors = (Array.isArray(b.content.authors)
+      ? b.content.authors
+      : []) as AuthorItem[];
+    const badge = cstr(b.content, "badgeTitle") || "Meet the Author";
+
+    return (
+      <div key={b.id} className="bk-authors-list w-full space-y-4 my-2">
+        {rawAuthors.map((author, aIdx) => (
+          <div
+            key={aIdx}
+            className={`bk-author-infos bg-white dark:bg-navy rounded-2xl p-5 sm:p-6 transition-all relative overflow-hidden ${
+              showFeedBorders
+                ? "border border-gray-200 dark:border-white/10 shadow-sm hover:shadow-md"
+                : "border-0 shadow-none"
+            }`}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0B2F5E] via-primary to-[#FF034D]" />
+
+            <div className="bk-author-infos__header space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="bk-author-infos__title text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary dark:text-blue-300 border border-primary/20 w-fit">
+                  {badge}
+                </div>
+                {author.institution && (
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">
+                    {author.institution}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="bk-author-infos__photo-wrapper shrink-0">
+                  <div className="bk-author-infos__photo-profile relative">
+                    <img
+                      loading="lazy"
+                      className="picture-item img-circle w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-white dark:border-navy shadow-md ring-2 ring-[#0B2F5E]/20"
+                      src={author.photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
+                      alt={author.name}
+                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h4 className="bk-author-infos__author-name rs_read_this_class text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                    {author.name}
+                  </h4>
+                  <p className="bk-author-infos__author-title text-xs text-primary dark:text-blue-400 font-semibold mt-1 leading-snug">
+                    {author.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bk-author-infos__content mt-4 pt-3 border-t border-gray-100 dark:border-white/5 space-y-3">
+              {author.bio && (
+                <div className="bk-author-infos__description text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                  <div className="rte media-hub-font whitespace-pre-wrap">
+                    {author.bio}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                {author.linkUrl ? (
+                  <a
+                    href={author.linkUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B2F5E] dark:text-white hover:text-primary transition-colors bg-[#0B2F5E]/5 dark:bg-white/10 hover:bg-[#0B2F5E]/10 px-3.5 py-1.5 rounded-xl cursor-pointer"
+                  >
+                    <span>{author.linkText || "More About the Author"}</span>
+                    <span>→</span>
+                  </a>
+                ) : <div />}
+
+                <div className="bk-author-infos__social-links">
+                  <ul className="flex items-center gap-2 list-none p-0 m-0">
+                    {author.socialLinkedin && (
+                      <li>
+                        <a
+                          href={author.socialLinkedin}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Profil LinkedIn"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-white/10 transition-colors"
+                        >
+                          in
+                        </a>
+                      </li>
+                    )}
+                    {author.socialEmail && (
+                      <li>
+                        <a
+                          href={`mailto:${author.socialEmail}`}
+                          title="Contacter par email"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Mail className="w-3.5 h-3.5" strokeWidth={1.8} />
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (savedId) {
     return (
       <div className="bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-2xl p-10 text-center max-w-xl mx-auto shadow-card">
-        <div className="w-16 h-16 mx-auto bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">
-          ✓
+        <div className="w-16 h-16 mx-auto bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4">
+          <Check className="w-8 h-8" strokeWidth={2.5} />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Cours enregistré avec succès !</h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
@@ -1044,36 +1541,36 @@ function CourseEditor() {
                 type="button"
                 onClick={() => addBlock("heading")}
                 title="Insérer un Titre de section (Alt + 1)"
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <IconHeading className="w-3.5 h-3.5 text-[#0B2F5E] dark:text-blue-300" />
+                <IconHeading className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" strokeWidth={1.75} />
                 <span>+ Titre</span>
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("text")}
                 title="Insérer un Paragraphe Markdown (Alt + 2)"
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <IconFileText className="w-3.5 h-3.5 text-[#0B2F5E] dark:text-blue-300" />
+                <IconFileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" strokeWidth={1.75} />
                 <span>+ Texte</span>
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("code")}
                 title="Insérer un Bloc de code (Alt + C)"
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <IconCode2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <IconCode2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
                 <span>+ Code</span>
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("quiz")}
                 title="Insérer un Quiz QCM (Alt + Q)"
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[#0B2F5E] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <IconHelpCircle className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <IconHelpCircle className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" strokeWidth={1.75} />
                 <span>+ Quiz</span>
               </button>
             </div>
@@ -1085,17 +1582,18 @@ function CourseEditor() {
               <input
                 value={ribbonSearch}
                 onChange={(e) => setRibbonSearch(e.target.value)}
-                placeholder="🔍 Que souhaitez-vous faire ? (ex: quiz, code...)"
+                placeholder="Que souhaitez-vous faire ? (ex : quiz, code...)"
                 className="w-full text-xs px-2.5 py-1.5 pl-8 rounded-lg bg-white dark:bg-navy-dark border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#0B2F5E] dark:focus:border-blue-400 transition-all"
               />
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500 pointer-events-none" strokeWidth={1.75} />
               {ribbonSearch && (
                 <button
                   type="button"
                   onClick={() => setRibbonSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                  title="Effacer la recherche"
                 >
-                  ✕
+                  <IconX className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -1115,7 +1613,7 @@ function CourseEditor() {
                       onClick={cmd.action}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs hover:bg-[#0B2F5E]/5 dark:hover:bg-white/10 transition-colors group cursor-pointer"
                     >
-                      <cmd.icon className="w-4 h-4 text-[#0B2F5E] dark:text-blue-300 group-hover:scale-110 shrink-0" />
+                      <cmd.icon className="w-4 h-4 text-[#0B2F5E] dark:text-blue-300 group-hover:scale-110 shrink-0" strokeWidth={1.75} />
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-800 dark:text-gray-200 group-hover:text-[#0B2F5E] dark:group-hover:text-blue-300 truncate">
                           {cmd.label}
@@ -1138,26 +1636,80 @@ function CourseEditor() {
               <button
                 type="button"
                 onClick={() => setViewMode("edit")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewMode === "edit"
-                    ? "bg-white dark:bg-navy text-[#0B2F5E] dark:text-white shadow-2xs"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                    ? "bg-white dark:bg-navy text-[#0B2F5E] dark:text-blue-300 shadow-2xs"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
-                <span>✏️</span>
+                <Edit3 className={`w-3.5 h-3.5 shrink-0 ${viewMode === "edit" ? "text-[#0B2F5E] dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`} strokeWidth={1.75} />
                 <span className="hidden sm:inline">Édition ({blocks.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("preview")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewMode === "preview"
-                    ? "bg-white dark:bg-navy text-[#0B2F5E] dark:text-white shadow-2xs"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                    ? "bg-white dark:bg-navy text-[#0B2F5E] dark:text-blue-300 shadow-2xs"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
-                <span>👁️</span>
+                <Eye className={`w-3.5 h-3.5 shrink-0 ${viewMode === "preview" ? "text-[#0B2F5E] dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`} strokeWidth={1.75} />
                 <span className="hidden sm:inline">Aperçu</span>
+              </button>
+            </div>
+
+            {/* Option pour retirer ou afficher les contours du feed */}
+            <button
+              type="button"
+              onClick={() => setShowFeedBorders((prev) => !prev)}
+              title={showFeedBorders ? "Retirer les contours du feed" : "Afficher les contours du feed"}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                !showFeedBorders
+                  ? "bg-[#0B2F5E]/10 dark:bg-white/10 text-[#0B2F5E] dark:text-blue-300 border-[#0B2F5E]/30 dark:border-blue-400/30 shadow-2xs"
+                  : "bg-white dark:bg-navy text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-gray-300"
+              }`}
+            >
+              {showFeedBorders ? (
+                <>
+                  <Square className="w-3.5 h-3.5 text-gray-500" />
+                  <span className="hidden sm:inline">Avec contours</span>
+                </>
+              ) : (
+                <>
+                  <SquareDashed className="w-3.5 h-3.5 text-[#0B2F5E] dark:text-blue-300" />
+                  <span className="hidden sm:inline font-extrabold">Sans contours</span>
+                </>
+              )}
+            </button>
+
+            {/* Option Sommaire Dynamique (Flanc Gauche / Droit / Masqué) */}
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-navy p-0.5">
+              <button
+                type="button"
+                onClick={() => setTocPlacement((curr) => curr === "left" ? "none" : "left")}
+                title={tocPlacement === "left" ? "Masquer le sommaire" : "Afficher le Sommaire en Haut à Gauche"}
+                className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  tocPlacement === "left"
+                    ? "bg-[#0B2F5E] text-white shadow-2xs"
+                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                <ListTree className="w-3.5 h-3.5" strokeWidth={1.8} />
+                <span className="hidden md:inline">Sommaire</span>
+                <span className="text-[10px] hidden sm:inline">(G)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTocPlacement((curr) => curr === "right" ? "none" : "right")}
+                title={tocPlacement === "right" ? "Masquer le sommaire" : "Afficher le Sommaire en Haut à Droite"}
+                className={`px-1.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  tocPlacement === "right"
+                    ? "bg-[#0B2F5E] text-white shadow-2xs"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
+                }`}
+              >
+                (D)
               </button>
             </div>
 
@@ -1229,6 +1781,7 @@ function CourseEditor() {
                 <RibbonGroup label="Organisation">
                   <RibbonLargeButton
                     icon={Copy}
+                    iconColor="text-slate-600 dark:text-slate-300"
                     label="Dupliquer"
                     shortcut="Ctrl+D"
                     onClick={duplicateSelected}
@@ -1237,6 +1790,7 @@ function CourseEditor() {
                   <div className="flex flex-col justify-center gap-1">
                     <RibbonSmallButton
                       icon={ArrowUp}
+                      iconColor="text-slate-500 dark:text-slate-400"
                       label="Monter"
                       shortcut="Alt+↑"
                       onClick={() => moveSelected("up")}
@@ -1244,6 +1798,7 @@ function CourseEditor() {
                     />
                     <RibbonSmallButton
                       icon={ArrowDown}
+                      iconColor="text-slate-500 dark:text-slate-400"
                       label="Descendre"
                       shortcut="Alt+↓"
                       onClick={() => moveSelected("down")}
@@ -1264,18 +1819,21 @@ function CourseEditor() {
                 <RibbonGroup label="Blocs de texte">
                   <RibbonLargeButton
                     icon={IconHeading}
+                    iconColor="text-blue-700 dark:text-blue-400"
                     label="Titre section"
                     shortcut="Alt+1"
                     onClick={() => addBlock("heading")}
                   />
                   <RibbonLargeButton
                     icon={IconFileText}
+                    iconColor="text-slate-600 dark:text-slate-300"
                     label="Texte Markdown"
                     shortcut="Alt+2"
                     onClick={() => addBlock("text")}
                   />
                   <RibbonLargeButton
                     icon={IconQuote}
+                    iconColor="text-amber-700 dark:text-amber-400"
                     label="Citation"
                     shortcut="Alt+3"
                     onClick={() => addBlock("quote")}
@@ -1286,12 +1844,21 @@ function CourseEditor() {
                 <RibbonGroup label="Pédagogie">
                   <RibbonLargeButton
                     icon={IconLightbulb}
+                    iconColor="text-amber-500 dark:text-amber-400"
                     label="Encadré astuce"
                     shortcut="Alt+4"
                     onClick={() => addBlock("callout")}
                   />
                   <RibbonLargeButton
+                    icon={IconHistory}
+                    iconColor="text-amber-700 dark:text-amber-300"
+                    label="Point d'histoire"
+                    shortcut="Alt+H"
+                    onClick={() => addBlock("history")}
+                  />
+                  <RibbonLargeButton
                     icon={IconMinus}
+                    iconColor="text-gray-400 dark:text-gray-500"
                     label="Séparateur"
                     shortcut="Alt+5"
                     onClick={() => addBlock("divider")}
@@ -1303,11 +1870,13 @@ function CourseEditor() {
                   <div className="flex flex-col justify-center gap-1">
                     <RibbonSmallButton
                       icon={IconHeading}
+                      iconColor="text-blue-700 dark:text-blue-400"
                       label="Titre H2 (Section)"
                       onClick={() => addBlock("heading")}
                     />
                     <RibbonSmallButton
                       icon={IconHeading}
+                      iconColor="text-blue-600 dark:text-blue-400"
                       label="Sous-titre H3"
                       onClick={() => {
                         const newId = Date.now();
@@ -1327,24 +1896,28 @@ function CourseEditor() {
                 <RibbonGroup label="Code & Données">
                   <RibbonLargeButton
                     icon={IconCode2}
+                    iconColor="text-emerald-600 dark:text-emerald-400"
                     label="Code interactif"
                     shortcut="Alt+C"
                     onClick={() => addBlock("code")}
                   />
                   <RibbonLargeButton
                     icon={IconSigma}
+                    iconColor="text-indigo-600 dark:text-indigo-400"
                     label="Formule LaTeX"
                     shortcut="Alt+M"
                     onClick={() => addBlock("math")}
                   />
                   <RibbonLargeButton
                     icon={IconTable}
+                    iconColor="text-sky-600 dark:text-sky-400"
                     label="Tableau"
                     shortcut="Alt+T"
                     onClick={() => addBlock("table")}
                   />
                   <RibbonLargeButton
                     icon={IconDatabase}
+                    iconColor="text-teal-600 dark:text-teal-400"
                     label="Dataset"
                     shortcut="Alt+D"
                     onClick={() => addBlock("dataset")}
@@ -1355,27 +1928,49 @@ function CourseEditor() {
                 <RibbonGroup label="Médias & Web">
                   <RibbonLargeButton
                     icon={IconPlay}
+                    iconColor="text-rose-600 dark:text-rose-400"
                     label="Vidéo YouTube"
                     shortcut="Alt+V"
                     onClick={() => addBlock("video")}
                   />
                   <RibbonLargeButton
                     icon={ImageIcon}
+                    iconColor="text-amber-600 dark:text-amber-400"
                     label="Schéma / Image"
                     shortcut="Alt+I"
                     onClick={() => addBlock("image")}
                   />
                   <RibbonLargeButton
                     icon={IconMic}
+                    iconColor="text-violet-600 dark:text-violet-400"
                     label="Capsule Audio"
                     shortcut="Alt+A"
                     onClick={() => addBlock("audio")}
                   />
                   <RibbonLargeButton
                     icon={IconExternalLink}
+                    iconColor="text-blue-600 dark:text-blue-400"
                     label="App / Iframe"
                     shortcut="Alt+E"
                     onClick={() => addBlock("embed")}
+                  />
+                </RibbonGroup>
+
+                {/* Groupe Récits & Équipe */}
+                <RibbonGroup label="Récits & Auteurs">
+                  <RibbonLargeButton
+                    icon={IconHistory}
+                    iconColor="text-amber-700 dark:text-amber-300"
+                    label="Point d'histoire"
+                    shortcut="Alt+H"
+                    onClick={() => addBlock("history")}
+                  />
+                  <RibbonLargeButton
+                    icon={IconAuthor}
+                    iconColor="text-[#0B2F5E] dark:text-blue-300"
+                    label="Fiche Auteurs"
+                    shortcut="Alt+U"
+                    onClick={() => addBlock("author")}
                   />
                 </RibbonGroup>
               </>
@@ -1388,12 +1983,14 @@ function CourseEditor() {
                 <RibbonGroup label="Questions & Quiz">
                   <RibbonLargeButton
                     icon={IconHelpCircle}
+                    iconColor="text-purple-600 dark:text-purple-400"
                     label="Question QCM"
                     shortcut="Alt+Q"
                     onClick={() => addBlock("quiz")}
                   />
                   <RibbonLargeButton
                     icon={IconCheckCheck}
+                    iconColor="text-teal-600 dark:text-teal-400"
                     label="Question V/F"
                     shortcut="Alt+F"
                     onClick={() => addBlock("truefalse")}
@@ -1404,12 +2001,14 @@ function CourseEditor() {
                 <RibbonGroup label="Pratique & Mémorisation">
                   <RibbonLargeButton
                     icon={IconCheckSquare}
+                    iconColor="text-blue-600 dark:text-blue-400"
                     label="Exercice & Sol."
                     shortcut="Alt+X"
                     onClick={() => addBlock("exercise")}
                   />
                   <RibbonLargeButton
                     icon={LucideSparkles}
+                    iconColor="text-amber-500 dark:text-amber-400"
                     label="Flashcard"
                     shortcut="Alt+K"
                     onClick={() => addBlock("flashcard")}
@@ -1425,15 +2024,28 @@ function CourseEditor() {
                 <RibbonGroup label="Récapitulatif">
                   <RibbonLargeButton
                     icon={IconStar}
+                    iconColor="text-amber-500 dark:text-amber-400"
                     label="Points clés"
                     shortcut="Alt+S"
                     onClick={() => addBlock("summary")}
                   />
                   <RibbonLargeButton
                     icon={IconLibrary}
+                    iconColor="text-sky-600 dark:text-sky-400"
                     label="Ressources"
                     shortcut="Alt+R"
                     onClick={() => addBlock("resources")}
+                  />
+                </RibbonGroup>
+
+                {/* Groupe Équipe enseignante */}
+                <RibbonGroup label="Équipe enseignante">
+                  <RibbonLargeButton
+                    icon={IconAuthor}
+                    iconColor="text-[#0B2F5E] dark:text-blue-300"
+                    label="Auteurs cours"
+                    shortcut="Alt+U"
+                    onClick={() => addBlock("author")}
                   />
                 </RibbonGroup>
 
@@ -1441,12 +2053,14 @@ function CourseEditor() {
                 <RibbonGroup label="Document">
                   <RibbonLargeButton
                     icon={Save}
+                    iconColor="text-emerald-600 dark:text-emerald-400"
                     label="Publier cours"
                     shortcut="Ctrl+S"
                     onClick={publish}
                   />
                   <RibbonLargeButton
                     icon={FileDown}
+                    iconColor="text-slate-600 dark:text-slate-400"
                     label="Fiche synthétique"
                     shortcut="Ctrl+P"
                     onClick={() => window.print()}
@@ -1462,23 +2076,105 @@ function CourseEditor() {
                 <RibbonGroup label="Mode de vue">
                   <RibbonLargeButton
                     icon={Edit3}
+                    iconColor="text-blue-700 dark:text-blue-400"
                     label="Mode Édition"
                     onClick={() => setViewMode("edit")}
                     isActive={viewMode === "edit"}
                   />
                   <RibbonLargeButton
                     icon={Eye}
+                    iconColor="text-emerald-600 dark:text-emerald-400"
                     label="Aperçu Étudiant"
                     onClick={() => setViewMode("preview")}
                     isActive={viewMode === "preview"}
                   />
                 </RibbonGroup>
 
+                {/* Groupe Contours du feed */}
+                <RibbonGroup label="Contours du feed">
+                  <RibbonLargeButton
+                    icon={showFeedBorders ? Square : SquareDashed}
+                    iconColor="text-slate-600 dark:text-slate-300"
+                    label={showFeedBorders ? "Avec contours" : "Sans contours"}
+                    shortcut="Alt+B"
+                    isActive={!showFeedBorders}
+                    onClick={() => setShowFeedBorders((v) => !v)}
+                  />
+                  <div className="flex flex-col justify-center gap-1 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedBorders(false)}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors ${!showFeedBorders ? "bg-[#0B2F5E] text-white shadow-2xs" : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200"}`}
+                    >
+                      Sans contours
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedBorders(true)}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded transition-colors ${showFeedBorders ? "bg-[#0B2F5E] text-white shadow-2xs" : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200"}`}
+                    >
+                      Avec contours
+                    </button>
+                  </div>
+                </RibbonGroup>
+
+                {/* Groupe Sommaire dynamique */}
+                <RibbonGroup label="Sommaire dynamique">
+                  <RibbonLargeButton
+                    icon={ListTree}
+                    iconColor="text-[#0B2F5E] dark:text-blue-300"
+                    label={tocPlacement === "left" ? "Flanc Gauche" : tocPlacement === "right" ? "Flanc Droit" : "Sommaire Masqué"}
+                    shortcut="Alt+O"
+                    isActive={tocPlacement !== "none"}
+                    onClick={() => setTocPlacement((curr) => curr === "none" ? "left" : "none")}
+                  />
+                  <div className="flex flex-col justify-center gap-1 px-1">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setTocPlacement("left")}
+                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors cursor-pointer ${
+                          tocPlacement === "left"
+                            ? "bg-[#0B2F5E] text-white shadow-2xs"
+                            : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
+                        }`}
+                        title="Positionner en haut à gauche (Flanc extérieur gauche)"
+                      >
+                        Haut Gauche
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTocPlacement("right")}
+                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors cursor-pointer ${
+                          tocPlacement === "right"
+                            ? "bg-[#0B2F5E] text-white shadow-2xs"
+                            : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
+                        }`}
+                        title="Positionner en haut à droite (Flanc extérieur droit)"
+                      >
+                        Haut Droit
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTocPlacement("none")}
+                      className={`text-[10px] font-bold px-2 py-1 rounded transition-colors cursor-pointer ${
+                        tocPlacement === "none"
+                          ? "bg-gray-200 dark:bg-white/20 text-gray-800 dark:text-gray-200"
+                          : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 hover:text-danger"
+                      }`}
+                      title="Masquer le sommaire"
+                    >
+                      {tocPlacement === "none" ? "Masqué" : "Masquer"} ({tocItems.length} repères)
+                    </button>
+                  </div>
+                </RibbonGroup>
+
                 {/* Groupe Structure du cours */}
                 <RibbonGroup label="Structure du cours">
                   <div className="flex flex-col justify-center gap-1.5 px-2">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-gray-300">
-                      <ListTree className="w-4 h-4 text-[#0B2F5E] dark:text-blue-400" />
+                      <ListTree className="w-4 h-4 text-[#0B2F5E] dark:text-blue-400" strokeWidth={1.75} />
                       <span>{blocks.length} blocs au total</span>
                     </div>
                     <span className="text-[10px] text-gray-400">
@@ -1494,7 +2190,11 @@ function CourseEditor() {
       </div>
 
       {/* Titre & métadonnées du cours */}
-      <div className="w-full bg-white dark:bg-navy border border-gray-200/60 dark:border-white/5 rounded-xl p-5 sm:p-6 shadow-2xs space-y-5">
+      <div className={`w-full bg-white dark:bg-navy rounded-xl p-5 sm:p-6 space-y-5 transition-all ${
+        showFeedBorders
+          ? "border border-gray-200/60 dark:border-white/5 shadow-2xs"
+          : "border-0 shadow-none"
+      }`}>
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
             Titre principal du cours *
@@ -1525,9 +2225,9 @@ function CourseEditor() {
           </Field>
           <Field label="Niveau d'accès">
             <select value={access} onChange={(e) => setAccess(e.target.value)} className={SEL}>
-              <option value="public">🌍 Ouvert à tous</option>
-              <option value="hiparis">🎓 Étudiants Hi! PARIS</option>
-              <option value="cohort">👥 Cohorte restreinte</option>
+              <option value="public">Ouvert à tous</option>
+              <option value="hiparis">Étudiants Hi! PARIS</option>
+              <option value="cohort">Cohorte restreinte</option>
             </select>
           </Field>
         </div>
@@ -1535,13 +2235,30 @@ function CourseEditor() {
 
       {error && (
         <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-xl p-4 flex items-center gap-2">
-          <span>⚠️</span> {error}
+          <AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+          <span>{error}</span>
         </div>
       )}
 
       {/* ── MODE 1 : ÉDITION ── */}
       {viewMode === "edit" ? (
-        <div className="space-y-6">
+        <div className="w-full relative space-y-6">
+          {/* FLANC EXTÉRIEUR GAUCHE EN MODE ÉDITION (Positionné à l'extérieur des limites du dock, toujours visible) */}
+          {tocPlacement === "left" && (
+            <aside className="hidden min-[1540px]:block absolute right-[calc(100%+1.5rem)] top-0 bottom-0 w-72 2xl:w-80 z-20 pointer-events-none">
+              <div className="sticky top-[160px] pointer-events-auto">
+                {renderTableOfContents()}
+              </div>
+            </aside>
+          )}
+
+          {/* Sommaire responsive sur écrans compacts (< 1540px) */}
+          {tocPlacement !== "none" && (
+            <div className="block min-[1540px]:hidden">
+              {renderTableOfContents()}
+            </div>
+          )}
+
           {/* LISTE PLEINE LARGEUR DES BLOCS DU COURS (OUVERTE & SANS BORDURES ENCOMBRANTES) */}
           <div className="w-full space-y-4">
             {blocks.map((block, index) => {
@@ -1549,15 +2266,20 @@ function CourseEditor() {
               return (
                 <div
                   key={block.id}
+                  id={`block-${block.id}`}
                   onClick={() => setSelectedBlockId(block.id)}
                   className={`w-full bg-white dark:bg-navy rounded-xl p-5 sm:p-6 transition-all group scroll-mt-48 ${
                     selectedBlockId === block.id
                       ? "ring-2 ring-[#0B2F5E] dark:ring-blue-400 shadow-md border border-[#0B2F5E]/20"
-                      : "border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/15 shadow-2xs"
+                      : showFeedBorders
+                      ? "border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/15 shadow-2xs"
+                      : "border-0 shadow-none hover:bg-gray-50/50 dark:hover:bg-white/5"
                   }`}
                 >
                   {/* Header du bloc */}
-                  <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-gray-100 dark:border-white/5">
+                  <div className={`flex items-center justify-between gap-2 mb-3 pb-2.5 ${
+                    showFeedBorders ? "border-b border-gray-100 dark:border-white/5" : ""
+                  }`}>
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center ${
@@ -1568,9 +2290,14 @@ function CourseEditor() {
                       >
                         {index + 1}
                       </span>
-                      <span className="w-6 h-6 rounded bg-gray-100 dark:bg-white/10 text-xs font-bold flex items-center justify-center font-mono">
-                        {def?.icon ?? "▪"}
-                      </span>
+                      {(() => {
+                        const BIcon = BLOCK_ICONS[block.type] ?? IconFileText;
+                        return (
+                          <span className="w-6 h-6 rounded-md bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0">
+                            <BIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          </span>
+                        );
+                      })()}
                       <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">
                         {def?.label ?? block.type}
                       </span>
@@ -1589,7 +2316,7 @@ function CourseEditor() {
                         disabled={index === 0}
                         className="p-1.5 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-20 cursor-pointer"
                       >
-                        ▲
+                        <ChevronUp className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
@@ -1598,24 +2325,46 @@ function CourseEditor() {
                         disabled={index === blocks.length - 1}
                         className="p-1.5 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors disabled:opacity-20 cursor-pointer"
                       >
-                        ▼
+                        <ChevronDown className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
                         onClick={() => duplicateBlock(block.id)}
-                        className="px-2 py-1 text-xs text-gray-500 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
                       >
-                        Dupliquer
+                        <Copy className="w-3 h-3" />
+                        <span>Dupliquer</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => removeBlock(block.id)}
-                        className="px-2 py-1 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors font-medium ml-1 cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors font-medium ml-1 cursor-pointer"
                       >
-                        Supprimer
+                        <Trash2 className="w-3 h-3" />
+                        <span>Supprimer</span>
                       </button>
                     </div>
                   </div>
+
+                  {/* Badge de repérage et quadrillage de la div */}
+                  {showDebugGrid && (
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-500/10 dark:bg-white/10 text-indigo-900 dark:text-indigo-300 border border-indigo-400/30 mb-3 select-none">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                        <LayoutGrid className="w-3 h-3 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span>DIV #{index + 1} : {def?.label || block.type}</span>
+                      </div>
+                      <span className="font-mono bg-white dark:bg-navy px-1.5 py-0.5 rounded border border-indigo-200 dark:border-white/10">
+                        {block.type === "author"
+                          ? (cstr(block.content, "layout") === "inline"
+                              ? "Zone B (Feed Pleine Largeur : C1 à C12)"
+                              : cstr(block.content, "layout") === "sidebar-left"
+                              ? "Zone A (Flanc Gauche : C1 à C3)"
+                              : "Zone C (Flanc Droit : C10 à C12)")
+                          : "Zone B (Feed Central : C4 à C9)"}
+                      </span>
+                    </div>
+                  )}
 
                   {/* FORMULAIRE SPÉCIFIQUE PAR BLOC */}
 
@@ -1623,15 +2372,18 @@ function CourseEditor() {
                   {block.type === "heading" && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <select
-                          value={cstr(block.content, "level") || "h2"}
-                          onChange={(e) => setContent(block.id, { ...block.content, level: e.target.value })}
-                          className="w-24 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs rounded-lg px-2 py-1.5 font-bold"
-                        >
-                          <option value="h1">Niveau H1</option>
-                          <option value="h2">Niveau H2</option>
-                          <option value="h3">Niveau H3</option>
-                        </select>
+                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2.5 py-1.5">
+                          <IconHeading className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" strokeWidth={1.8} />
+                          <select
+                            value={cstr(block.content, "level") || "h2"}
+                            onChange={(e) => setContent(block.id, { ...block.content, level: e.target.value })}
+                            className="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
+                          >
+                            <option value="h1">Niveau H1</option>
+                            <option value="h2">Niveau H2</option>
+                            <option value="h3">Niveau H3</option>
+                          </select>
+                        </div>
                         <input
                           value={cstr(block.content, "content")}
                           onChange={(e) => setContent(block.id, { ...block.content, content: e.target.value })}
@@ -1656,17 +2408,26 @@ function CourseEditor() {
                   {/* 3. Callout / Encadré */}
                   {block.type === "callout" && (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <select
-                          value={cstr(block.content, "variant") || "tip"}
-                          onChange={(e) => setContent(block.id, { ...block.content, variant: e.target.value })}
-                          className="w-36 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs rounded-lg px-2.5 py-1.5 font-bold"
-                        >
-                          <option value="tip">💡 Astuce / Tip</option>
-                          <option value="info">ℹ️ Information</option>
-                          <option value="warning">⚠️ Attention</option>
-                          <option value="definition">📌 Définition</option>
-                        </select>
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2.5 py-1.5">
+                          {(() => {
+                            const curV = cstr(block.content, "variant") || "tip";
+                            if (curV === "warning") return <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" strokeWidth={1.8} />;
+                            if (curV === "info") return <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" strokeWidth={1.8} />;
+                            if (curV === "definition") return <BookOpen className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" strokeWidth={1.8} />;
+                            return <IconLightbulb className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.8} />;
+                          })()}
+                          <select
+                            value={cstr(block.content, "variant") || "tip"}
+                            onChange={(e) => setContent(block.id, { ...block.content, variant: e.target.value })}
+                            className="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
+                          >
+                            <option value="tip">Astuce / Bonnes pratiques</option>
+                            <option value="info">Information clé</option>
+                            <option value="warning">Attention / Piège</option>
+                            <option value="definition">Définition & Concept</option>
+                          </select>
+                        </div>
                         <input
                           value={cstr(block.content, "title")}
                           onChange={(e) => setContent(block.id, { ...block.content, title: e.target.value })}
@@ -1729,18 +2490,21 @@ function CourseEditor() {
                   {block.type === "code" && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-gray-400">
-                        <select
-                          value={cstr(block.content, "language") || "python"}
-                          onChange={(e) => setContent(block.id, { ...block.content, language: e.target.value })}
-                          className="bg-gray-100 dark:bg-white/10 rounded-md px-2 py-1 text-xs font-mono font-bold text-gray-800 dark:text-gray-200"
-                        >
-                          <option value="python">Python</option>
-                          <option value="sql">SQL</option>
-                          <option value="r">R</option>
-                          <option value="bash">Bash</option>
-                          <option value="javascript">JavaScript</option>
-                        </select>
-                        <span className="font-mono">Coloration syntaxique</span>
+                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 rounded-md px-2.5 py-1">
+                          <IconCode2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.8} />
+                          <select
+                            value={cstr(block.content, "language") || "python"}
+                            onChange={(e) => setContent(block.id, { ...block.content, language: e.target.value })}
+                            className="bg-transparent text-xs font-mono font-bold text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
+                          >
+                            <option value="python">Python</option>
+                            <option value="sql">SQL</option>
+                            <option value="r">R</option>
+                            <option value="bash">Bash</option>
+                            <option value="javascript">JavaScript</option>
+                          </select>
+                        </div>
+                        <span className="font-mono text-[11px]">Coloration syntaxique</span>
                       </div>
                       <textarea
                         value={cstr(block.content, "content")}
@@ -1756,7 +2520,10 @@ function CourseEditor() {
                   {block.type === "math" && (
                     <div className="space-y-2.5">
                       <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase">Équation LaTeX :</label>
+                        <label className="text-[11px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                          <IconSigma className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" strokeWidth={1.8} />
+                          <span>Équation LaTeX :</span>
+                        </label>
                         <textarea
                           value={cstr(block.content, "formula")}
                           onChange={(e) => setContent(block.id, { ...block.content, formula: e.target.value })}
@@ -1777,8 +2544,9 @@ function CourseEditor() {
                   {/* 8. Tableau */}
                   {block.type === "table" && (
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-400">
-                        Tableau de comparaison ou métriques. Les colonnes sont séparées par des virgules :
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                        <IconTable className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" strokeWidth={1.8} />
+                        <span>Tableau de comparaison ou métriques. Les colonnes sont séparées par des virgules :</span>
                       </p>
                       <input
                         value={carr(block.content, "headers").join(", ")}
@@ -1976,7 +2744,10 @@ function CourseEditor() {
                             onChange={() => setContent(block.id, { ...block.content, isTrue: true })}
                             className="accent-primary"
                           />
-                          <span className="text-emerald-600 font-bold">VRAI</span>
+                          <span className="text-emerald-600 font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                            <span>VRAI</span>
+                          </span>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
@@ -1986,7 +2757,10 @@ function CourseEditor() {
                             onChange={() => setContent(block.id, { ...block.content, isTrue: false })}
                             className="accent-primary"
                           />
-                          <span className="text-danger font-bold">FAUX</span>
+                          <span className="text-danger font-bold flex items-center gap-1">
+                            <IconX className="w-3.5 h-3.5" strokeWidth={2.5} />
+                            <span>FAUX</span>
+                          </span>
                         </label>
                       </div>
                       <textarea
@@ -2016,20 +2790,32 @@ function CourseEditor() {
                         className={TXA}
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <textarea
-                          value={cstr(block.content, "hint")}
-                          onChange={(e) => setContent(block.id, { ...block.content, hint: e.target.value })}
-                          rows={2}
-                          placeholder="Indice pédagogique (dépliable par l'étudiant)..."
-                          className={TXA}
-                        />
-                        <textarea
-                          value={cstr(block.content, "solution")}
-                          onChange={(e) => setContent(block.id, { ...block.content, solution: e.target.value })}
-                          rows={2}
-                          placeholder="Solution détaillée et calculs..."
-                          className={TXA}
-                        />
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                            <IconLightbulb className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                            <span>Indice pédagogique</span>
+                          </label>
+                          <textarea
+                            value={cstr(block.content, "hint")}
+                            onChange={(e) => setContent(block.id, { ...block.content, hint: e.target.value })}
+                            rows={2}
+                            placeholder="Indice pédagogique (dépliable par l'étudiant)..."
+                            className={TXA}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                            <KeyRound className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                            <span>Solution détaillée</span>
+                          </label>
+                          <textarea
+                            value={cstr(block.content, "solution")}
+                            onChange={(e) => setContent(block.id, { ...block.content, solution: e.target.value })}
+                            rows={2}
+                            placeholder="Solution détaillée et calculs..."
+                            className={TXA}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2044,20 +2830,32 @@ function CourseEditor() {
                         className={INP}
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <textarea
-                          value={cstr(block.content, "front")}
-                          onChange={(e) => setContent(block.id, { ...block.content, front: e.target.value })}
-                          rows={3}
-                          placeholder="Recto : Notion, question ou acronyme..."
-                          className={TXA}
-                        />
-                        <textarea
-                          value={cstr(block.content, "back")}
-                          onChange={(e) => setContent(block.id, { ...block.content, back: e.target.value })}
-                          rows={3}
-                          placeholder="Verso : Définition complète et réponse..."
-                          className={TXA}
-                        />
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                            <RotateCw className="w-3 h-3 text-amber-500" />
+                            <span>Recto (Question / Notion)</span>
+                          </label>
+                          <textarea
+                            value={cstr(block.content, "front")}
+                            onChange={(e) => setContent(block.id, { ...block.content, front: e.target.value })}
+                            rows={3}
+                            placeholder="Recto : Notion, question ou acronyme..."
+                            className={TXA}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                            <LucideSparkles className="w-3 h-3 text-amber-500" />
+                            <span>Verso (Réponse / Définition)</span>
+                          </label>
+                          <textarea
+                            value={cstr(block.content, "back")}
+                            onChange={(e) => setContent(block.id, { ...block.content, back: e.target.value })}
+                            rows={3}
+                            placeholder="Verso : Définition complète et réponse..."
+                            className={TXA}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2065,12 +2863,17 @@ function CourseEditor() {
                   {/* 18. Points clés */}
                   {block.type === "summary" && (
                     <div className="space-y-3">
-                      <input
-                        value={cstr(block.content, "title")}
-                        onChange={(e) => setContent(block.id, { ...block.content, title: e.target.value })}
-                        placeholder="Titre de la synthèse..."
-                        className={INP}
-                      />
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                          <IconStar className="w-4 h-4" strokeWidth={2} />
+                        </div>
+                        <input
+                          value={cstr(block.content, "title")}
+                          onChange={(e) => setContent(block.id, { ...block.content, title: e.target.value })}
+                          placeholder="Titre de la synthèse (ex: Points clés du module)..."
+                          className={INP}
+                        />
+                      </div>
                       <textarea
                         value={carr(block.content, "points").join("\n")}
                         onChange={(e) => {
@@ -2087,8 +2890,9 @@ function CourseEditor() {
                   {/* 19. Ressources */}
                   {block.type === "resources" && (
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-400">
-                        Entrez les liens sous la forme : Titre | URL | Type (ex: Deep Learning Book | https://... | Livre)
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                        <IconLibrary className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" strokeWidth={1.8} />
+                        <span>Entrez les liens sous la forme : Titre | URL | Type (ex: Deep Learning Book | https://... | Livre)</span>
                       </p>
                       <textarea
                         value={((block.content.links as { title: string; url: string; type: string }[]) || [])
@@ -2109,6 +2913,393 @@ function CourseEditor() {
                     </div>
                   )}
 
+                  {/* 20. Point d'histoire */}
+                  {block.type === "history" && (
+                    <div className="space-y-4 bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/60 dark:border-amber-700/20 rounded-xl p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/40 dark:border-amber-700/20 pb-3">
+                        <div className="flex items-center gap-2">
+                          <IconHistory className="w-4 h-4 text-amber-700 dark:text-amber-300" strokeWidth={1.75} />
+                          <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                            Point d'histoire & Contexte biographique
+                          </span>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(block.content.defaultOpen)}
+                            onChange={(e) => setContent(block.id, { ...block.content, defaultOpen: e.target.checked })}
+                            className="rounded text-amber-600 focus:ring-amber-500"
+                          />
+                          <span>Déroulé par défaut dans l'aperçu</span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="md:col-span-2 space-y-1">
+                          <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            Titre / Personnalité / Événement *
+                          </label>
+                          <input
+                            value={cstr(block.content, "title")}
+                            onChange={(e) => setContent(block.id, { ...block.content, title: e.target.value })}
+                            placeholder="Ex: George Edward Pelham Box (1919-2013)"
+                            className={INP}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            Libellé du badge
+                          </label>
+                          <input
+                            value={cstr(block.content, "subtitle") || "Point d'histoire"}
+                            onChange={(e) => setContent(block.id, { ...block.content, subtitle: e.target.value })}
+                            placeholder="Point d'histoire"
+                            className={INP}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="md:col-span-2 space-y-1">
+                          <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            URL de la photo / portrait (toujours visible) *
+                          </label>
+                          <input
+                            value={cstr(block.content, "imageUrl")}
+                            onChange={(e) => setContent(block.id, { ...block.content, imageUrl: e.target.value })}
+                            placeholder="https://.../photo.jpg"
+                            className={INP}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            Dates / Période
+                          </label>
+                          <input
+                            value={cstr(block.content, "era")}
+                            onChange={(e) => setContent(block.id, { ...block.content, era: e.target.value })}
+                            placeholder="Ex: 1919-2013"
+                            className={INP}
+                          />
+                        </div>
+                      </div>
+
+                      {cstr(block.content, "imageUrl") && (
+                        <div className="flex items-center gap-3 p-2.5 bg-white dark:bg-navy rounded-xl border border-amber-200/50 w-fit">
+                          <img
+                            src={cstr(block.content, "imageUrl")}
+                            alt="Aperçu miniature"
+                            className="w-12 h-12 rounded-lg object-cover border border-amber-300"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                          <div className="text-[11px] text-gray-500">
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">Portrait sélectionné</p>
+                            <p className="text-[10px] text-gray-400">Reste affiché en permanence dans le summary déroulant</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                          Citation emblématique (optionnel)
+                        </label>
+                        <input
+                          value={cstr(block.content, "quote")}
+                          onChange={(e) => setContent(block.id, { ...block.content, quote: e.target.value })}
+                          placeholder="Ex: « Tous les modèles sont faux, mais certains sont utiles. » — George Box (1976)"
+                          className={INP}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                          Récit historique & contexte scientifique (déroulé au clic)
+                        </label>
+                        <textarea
+                          value={cstr(block.content, "content")}
+                          onChange={(e) => setContent(block.id, { ...block.content, content: e.target.value })}
+                          rows={4}
+                          placeholder="Rédigez le contexte historique et l'apport fondamental de la découverte..."
+                          className={TXA}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                          Légende / Crédit du portrait (optionnel)
+                        </label>
+                        <input
+                          value={cstr(block.content, "caption")}
+                          onChange={(e) => setContent(block.id, { ...block.content, caption: e.target.value })}
+                          placeholder="Ex: Portrait officiel de George Edward Pelham Box"
+                          className={INP}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 21. Auteurs du cours */}
+                  {block.type === "author" && (() => {
+                    type AuthorItem = {
+                      name: string;
+                      role: string;
+                      institution: string;
+                      photo: string;
+                      bio: string;
+                      linkText: string;
+                      linkUrl: string;
+                      socialLinkedin?: string;
+                      socialEmail?: string;
+                    };
+                    const authorsList = (Array.isArray(block.content.authors)
+                      ? block.content.authors
+                      : []) as AuthorItem[];
+
+                    function updateAuthor(idx: number, patch: Partial<AuthorItem>) {
+                      const next = [...authorsList];
+                      next[idx] = { ...next[idx], ...patch };
+                      setContent(block.id, { ...block.content, authors: next });
+                    }
+
+                    function addAuthorItem() {
+                      const next = [
+                        ...authorsList,
+                        {
+                          name: "Nouvel Enseignant",
+                          role: "Professeur / Chercheur",
+                          institution: "Hi! PARIS",
+                          photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+                          bio: "Biographie académique et domaines d'expertise...",
+                          linkText: "More About the Author",
+                          linkUrl: "https://www.hiparis.fr",
+                          socialLinkedin: "",
+                          socialEmail: "",
+                        },
+                      ];
+                      setContent(block.id, { ...block.content, authors: next });
+                    }
+
+                    function removeAuthorItem(idx: number) {
+                      const next = authorsList.filter((_, i) => i !== idx);
+                      setContent(block.id, { ...block.content, authors: next });
+                    }
+
+                    return (
+                      <div className="space-y-4 bg-blue-50/30 dark:bg-navy-dark/40 border border-blue-200/60 dark:border-white/10 rounded-xl p-4">
+                        {/* En-tête du bloc Auteur */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-white/10 pb-3">
+                          <div className="flex items-center gap-2">
+                            <IconAuthor className="w-4 h-4 text-[#0B2F5E] dark:text-blue-400" strokeWidth={1.75} />
+                            <span className="text-xs font-bold uppercase tracking-wider text-[#0B2F5E] dark:text-blue-400">
+                              Fiche Auteur(s) & Équipe Enseignante
+                            </span>
+                          </div>
+
+                          {/* Sélecteur de disposition : Flanc droit / Flanc gauche / Flux principal */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Placement :</span>
+                            <select
+                              value={cstr(block.content, "layout") || "sidebar-right"}
+                              onChange={(e) => setContent(block.id, { ...block.content, layout: e.target.value })}
+                              className="text-xs bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 font-bold text-[#0B2F5E] dark:text-white"
+                            >
+                              <option value="sidebar-right">Flanc droit (extérieur aux limites du cours)</option>
+                              <option value="sidebar-left">Flanc gauche (extérieur aux limites du cours)</option>
+                              <option value="inline">Dans le cours (corps de lecture standard pleine largeur)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 max-w-sm">
+                          <label className="text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            Titre du badge / En-tête
+                          </label>
+                          <input
+                            value={cstr(block.content, "badgeTitle") || "Meet the Author"}
+                            onChange={(e) => setContent(block.id, { ...block.content, badgeTitle: e.target.value })}
+                            placeholder="Meet the Author"
+                            className={INP}
+                          />
+                        </div>
+
+                        {/* Liste des auteurs éditables */}
+                        <div className="space-y-4">
+                          {authorsList.map((author, aIdx) => (
+                            <div
+                              key={aIdx}
+                              className="p-4 bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-xl space-y-3 relative group shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                  Auteur #{aIdx + 1}
+                                </span>
+                                {authorsList.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAuthorItem(aIdx)}
+                                    className="text-xs text-danger hover:underline font-semibold cursor-pointer"
+                                  >
+                                    Supprimer cet auteur
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Nom & Prénom *
+                                  </label>
+                                  <input
+                                    value={author.name}
+                                    onChange={(e) => updateAuthor(aIdx, { name: e.target.value })}
+                                    placeholder="Ex: Emmanuel Coblence"
+                                    className={INP}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Rôle / Titre académique *
+                                  </label>
+                                  <input
+                                    value={author.role}
+                                    onChange={(e) => updateAuthor(aIdx, { role: e.target.value })}
+                                    placeholder="Ex: Professor and Associate Dean..."
+                                    className={INP}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Établissement / École
+                                  </label>
+                                  <input
+                                    value={author.institution}
+                                    onChange={(e) => updateAuthor(aIdx, { institution: e.target.value })}
+                                    placeholder="Ex: HEC Paris"
+                                    className={INP}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                                <div className="md:col-span-2">
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    URL Photo de profil (avatar rond) *
+                                  </label>
+                                  <input
+                                    value={author.photo}
+                                    onChange={(e) => updateAuthor(aIdx, { photo: e.target.value })}
+                                    placeholder="https://.../photo.jpg"
+                                    className={INP}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 pt-3">
+                                  <img
+                                    src={author.photo}
+                                    alt={author.name}
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-[#0B2F5E]/30"
+                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                  />
+                                  <span className="text-[11px] text-gray-400">Aperçu avatar rond</span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                  Biographie / Description académique
+                                </label>
+                                <textarea
+                                  value={author.bio}
+                                  onChange={(e) => updateAuthor(aIdx, { bio: e.target.value })}
+                                  rows={3}
+                                  placeholder="Rédigez la biographie, chaires de recherche et cours dispensés..."
+                                  className={TXA}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Texte du lien de contact / profil
+                                  </label>
+                                  <input
+                                    value={author.linkText || "More About the Author"}
+                                    onChange={(e) => updateAuthor(aIdx, { linkText: e.target.value })}
+                                    placeholder="More About the Author"
+                                    className={INP}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    URL du lien de contact / profil
+                                  </label>
+                                  <input
+                                    value={author.linkUrl}
+                                    onChange={(e) => updateAuthor(aIdx, { linkUrl: e.target.value })}
+                                    placeholder="https://www.hec.edu/..."
+                                    className={INP}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Lien LinkedIn (optionnel)
+                                  </label>
+                                  <input
+                                    value={author.socialLinkedin || ""}
+                                    onChange={(e) => updateAuthor(aIdx, { socialLinkedin: e.target.value })}
+                                    placeholder="https://linkedin.com/in/..."
+                                    className={INP}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-500 uppercase">
+                                    Email professionnel (optionnel)
+                                  </label>
+                                  <input
+                                    value={author.socialEmail || ""}
+                                    onChange={(e) => updateAuthor(aIdx, { socialEmail: e.target.value })}
+                                    placeholder="contact@etablissement.fr"
+                                    className={INP}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={addAuthorItem}
+                            className="text-xs font-bold text-[#0B2F5E] dark:text-blue-400 hover:underline inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Ajouter un autre enseignant / auteur</span>
+                          </button>
+                        </div>
+
+                        {/* Aperçu direct du rendu dans le feed */}
+                        <div className="pt-4 border-t border-blue-200/50 dark:border-white/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                              Aperçu du rendu dans le feed :
+                            </span>
+                            <span className="text-[10px] font-semibold text-primary dark:text-blue-300">
+                              {cstr(block.content, "layout") === "inline"
+                                ? "Mode dans le cours (pleine largeur)"
+                                : cstr(block.content, "layout") === "sidebar-left"
+                                ? "Mode flanc gauche (sticky 320px sur grand écran)"
+                                : "Mode flanc droit (sticky 320px sur grand écran)"}
+                            </span>
+                          </div>
+                          <div className="max-w-md">
+                            {renderAuthorCard(block)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </div>
               );
             })}
@@ -2118,66 +3309,141 @@ function CourseEditor() {
               <button
                 type="button"
                 onClick={() => addBlock("text")}
-                className="flex-1 min-w-[140px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-primary hover:border-primary transition-all text-center cursor-pointer"
+                className="flex-1 min-w-[130px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-primary hover:border-primary transition-all text-center cursor-pointer"
               >
-                + Texte / Markdown
+                + Texte
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("code")}
-                className="flex-1 min-w-[140px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-emerald-500 hover:border-emerald-500 transition-all text-center cursor-pointer"
+                className="flex-1 min-w-[130px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-emerald-500 hover:border-emerald-500 transition-all text-center cursor-pointer"
               >
-                + Code interactif
+                + Code
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("quiz")}
-                className="flex-1 min-w-[140px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-purple-500 hover:border-purple-500 transition-all text-center cursor-pointer"
+                className="flex-1 min-w-[130px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-purple-500 hover:border-purple-500 transition-all text-center cursor-pointer"
               >
-                + Question QCM
+                + QCM
               </button>
               <button
                 type="button"
                 onClick={() => addBlock("callout")}
-                className="flex-1 min-w-[140px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-amber-500 hover:border-amber-500 transition-all text-center cursor-pointer"
+                className="flex-1 min-w-[130px] border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 text-xs font-bold text-gray-500 hover:text-amber-500 hover:border-amber-500 transition-all text-center cursor-pointer"
               >
-                + Encadré Astuce
+                + Astuce
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlock("history")}
+                className="flex-1 min-w-[130px] border-2 border-dashed border-amber-300 dark:border-amber-600/40 rounded-xl p-3 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 transition-all text-center cursor-pointer"
+              >
+                + Histoire
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlock("author")}
+                className="flex-1 min-w-[130px] border-2 border-dashed border-blue-300 dark:border-blue-600/40 rounded-xl p-3 text-xs font-bold text-[#0B2F5E] dark:text-blue-300 hover:bg-[#0B2F5E]/10 transition-all text-center cursor-pointer"
+              >
+                + Auteurs
               </button>
             </div>
           </div>
+
+          {/* FLANC EXTÉRIEUR DROIT EN MODE ÉDITION (Positionné à l'extérieur des limites du dock, toujours visible) */}
+          {tocPlacement === "right" && (
+            <aside className="hidden min-[1540px]:block absolute left-[calc(100%+1.5rem)] top-0 bottom-0 w-72 2xl:w-80 z-20 pointer-events-none">
+              <div className="sticky top-[160px] pointer-events-auto">
+                {renderTableOfContents()}
+              </div>
+            </aside>
+          )}
         </div>
       ) : (
-        /* ── MODE 2 : APERÇU ÉTUDIANT DIRECT (FULL FIDELITY - PLEINE LARGEUR SANS BORDURES ENCOMBRANTES) ── */
-        <div className="w-full bg-white dark:bg-navy rounded-2xl p-6 sm:p-12 space-y-8">
+        /* ── MODE 2 : APERÇU ÉTUDIANT DIRECT (PLEINE LARGEUR DU DOCK SANS RÉDUCTION DE LARGEUR) ── */
+        <div className="w-full relative">
 
-          {/* En-tête cours */}
-          <div className="border-b border-gray-100 dark:border-white/10 pb-6">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary dark:text-white">
-                {category}
-              </span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
-                {school}
-              </span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                Niveau : {level}
-              </span>
+          {/* FLANC EXTÉRIEUR GAUCHE (Positionné à l'extérieur des limites du dock) */}
+          {(tocPlacement === "left" || leftAuthorBlocks.length > 0) && (
+            <aside className="hidden min-[1540px]:block absolute right-[calc(100%+1.5rem)] top-0 bottom-0 w-72 2xl:w-80 z-20 pointer-events-none">
+              {/* Sommaire : Prioritaire & Toujours visible */}
+              {tocPlacement === "left" && (
+                <div className="sticky top-[160px] pointer-events-auto">
+                  {renderTableOfContents()}
+                </div>
+              )}
+
+              {/* Fiche auteur flanc gauche : au début du cours, disparaît au scroll si sommaire présent */}
+              {leftAuthorBlocks.length > 0 && (
+                <div className={`pointer-events-auto space-y-4 ${
+                  tocPlacement === "left"
+                    ? isScrolled
+                      ? "opacity-0 pointer-events-none max-h-0 overflow-hidden transition-all duration-300"
+                      : "mt-4 transition-all duration-300"
+                    : "mt-0"
+                }`}>
+                  {leftAuthorBlocks.map((b) => renderAuthorCard(b))}
+                </div>
+              )}
+            </aside>
+          )}
+
+          {/* CORPS PRINCIPAL DU COURS : PLEINE LARGEUR DU DOCK */}
+          <div className={`w-full bg-white dark:bg-navy rounded-2xl p-6 sm:p-12 space-y-8 transition-all ${
+            showFeedBorders
+              ? "border border-gray-100 dark:border-white/5 shadow-sm"
+              : "border-0 shadow-none"
+          }`}>
+            {/* En-tête cours */}
+            <div className={`pb-6 ${showFeedBorders ? "border-b border-gray-100 dark:border-white/10" : ""}`}>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary dark:text-white">
+                  {category}
+                </span>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                  {school}
+                </span>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  Niveau : {level}
+                </span>
+              </div>
+              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                {title || "Sans titre"}
+              </h1>
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              {title || "Sans titre"}
-            </h1>
-          </div>
 
-          {/* Rendu des 19 blocs */}
-          <div className="space-y-6">
-            {blocks.map((block) => {
+            {/* Sommaire & Fiche Auteur(s) responsive sur écrans compacts (< 1540px) */}
+            {(tocPlacement !== "none" || flankAuthorBlocks.length > 0) && (
+              <div className={`block min-[1540px]:hidden space-y-4 pb-6 ${showFeedBorders ? "border-b border-gray-100 dark:border-white/10" : ""}`}>
+                {tocPlacement !== "none" && renderTableOfContents()}
+                {flankAuthorBlocks.map((b) => renderAuthorCard(b))}
+              </div>
+            )}
 
-              // 1. Heading
+            {/* Rendu des blocs pédagogiques du cours */}
+            <div className="w-full space-y-6 flow-root">
+              {blocks.map((block) => {
+                // Si l'auteur est positionné sur un flanc extérieur, il est déjà affiché dans l'aside sticky extérieur
+                if (block.type === "author") {
+                  const layout = cstr(block.content, "layout") || "sidebar-right";
+                  if (layout === "sidebar-right" || layout === "sidebar-left") {
+                    return null;
+                  }
+                  // Si l'auteur est positionné "dans le cours" (inline)
+                  return (
+                    <div key={block.id} className="w-full my-6 clear-both">
+                      {renderAuthorCard(block)}
+                    </div>
+                  );
+                }
+
+                // 1. Heading
               if (block.type === "heading") {
                 const lvl = cstr(block.content, "level");
-                if (lvl === "h1") return <h1 key={block.id} className="text-3xl font-extrabold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10">{cstr(block.content, "content")}</h1>;
-                if (lvl === "h3") return <h3 key={block.id} className="text-lg font-bold text-gray-900 dark:text-white pt-2">{cstr(block.content, "content")}</h3>;
-                return <h2 key={block.id} className="text-2xl font-bold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10">{cstr(block.content, "content")}</h2>;
+                if (lvl === "h1") return <h1 key={block.id} id={`block-${block.id}`} className="text-3xl font-extrabold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48">{cstr(block.content, "content")}</h1>;
+                if (lvl === "h3") return <h3 key={block.id} id={`block-${block.id}`} className="text-lg font-bold text-gray-900 dark:text-white pt-2 scroll-mt-48">{cstr(block.content, "content")}</h3>;
+                return <h2 key={block.id} id={`block-${block.id}`} className="text-2xl font-bold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48">{cstr(block.content, "content")}</h2>;
               }
 
               // 2. Text
@@ -2198,10 +3464,18 @@ function CourseEditor() {
                   v === "definition" ? "border-purple-500 bg-purple-500/10 text-purple-900 dark:text-purple-200" :
                   "border-emerald-500 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200";
                 return (
-                  <div key={block.id} className={`border-l-4 p-4 rounded-r-2xl my-4 space-y-1 ${style}`}>
+                  <div key={block.id} className={`border-l-4 p-4 rounded-r-2xl my-4 space-y-1.5 ${style}`}>
                     <h4 className="text-sm font-bold flex items-center gap-2">
-                      <span>{v === "warning" ? "⚠️" : v === "info" ? "ℹ️" : v === "definition" ? "📌" : "💡"}</span>
-                      {cstr(block.content, "title")}
+                      {v === "warning" ? (
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" strokeWidth={1.8} />
+                      ) : v === "info" ? (
+                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" strokeWidth={1.8} />
+                      ) : v === "definition" ? (
+                        <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" strokeWidth={1.8} />
+                      ) : (
+                        <IconLightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.8} />
+                      )}
+                      <span>{cstr(block.content, "title")}</span>
                     </h4>
                     <p className="text-xs leading-relaxed opacity-90">{cstr(block.content, "content")}</p>
                   </div>
@@ -2223,7 +3497,7 @@ function CourseEditor() {
               // 5. Divider
               if (block.type === "divider") {
                 return (
-                  <div key={block.id} className="relative py-4">
+                  <div key={block.id} id={`block-${block.id}`} className="relative py-4 scroll-mt-48">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200 dark:border-white/10" /></div>
                     {cstr(block.content, "label") && (
                       <div className="relative flex justify-center"><span className="bg-white dark:bg-navy px-3 text-xs font-semibold text-gray-400">{cstr(block.content, "label")}</span></div>
@@ -2241,9 +3515,19 @@ function CourseEditor() {
                       <button
                         type="button"
                         onClick={() => copyCodeToClipboard(block.id, cstr(block.content, "content"))}
-                        className="hover:text-white transition-colors cursor-pointer text-[11px]"
+                        className="hover:text-white transition-colors cursor-pointer text-[11px] flex items-center gap-1.5"
                       >
-                        {copiedCodeId === block.id ? "✓ Copié !" : "Copier le code"}
+                        {copiedCodeId === block.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
+                            <span>Copié !</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.75} />
+                            <span>Copier le code</span>
+                          </>
+                        )}
                       </button>
                     </div>
                     <pre className="p-4 text-xs font-mono text-emerald-400 overflow-x-auto leading-relaxed">
@@ -2296,12 +3580,12 @@ function CourseEditor() {
               // 9. Dataset
               if (block.type === "dataset") {
                 return (
-                  <div key={block.id} className="border border-primary/20 bg-primary/5 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-4">
+                  <div key={block.id} className="border border-teal-500/20 bg-teal-500/5 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">📦</span>
+                      <div className="flex items-center gap-2.5">
+                        <IconDatabase className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" strokeWidth={1.75} />
                         <h4 className="text-sm font-bold text-gray-900 dark:text-white">{cstr(block.content, "title")}</h4>
-                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono font-bold">
+                        <span className="text-[10px] bg-teal-500/10 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded font-mono font-bold">
                           {cstr(block.content, "format")}
                         </span>
                       </div>
@@ -2312,7 +3596,7 @@ function CourseEditor() {
                         href={cstr(block.content, "url")}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-semibold rounded-xl transition-all shrink-0"
+                        className="px-4 py-2 bg-[#0B2F5E] hover:bg-[#0B2F5E]/90 text-white text-xs font-semibold rounded-xl transition-all shrink-0"
                       >
                         Télécharger ↗
                       </a>
@@ -2353,13 +3637,18 @@ function CourseEditor() {
                 return (
                   <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 my-4 bg-gray-50 dark:bg-white/5">
                     <div className="flex items-center gap-3">
-                      <span className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold">🎙</span>
+                      <span className="w-10 h-10 rounded-xl bg-violet-500/10 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                        <IconMic className="w-5 h-5" strokeWidth={1.75} />
+                      </span>
                       <div>
                         <p className="text-xs font-bold text-gray-900 dark:text-white">{cstr(block.content, "title")}</p>
                         <p className="text-[11px] text-gray-400">Durée : {cstr(block.content, "duration") || "Non spécifiée"}</p>
                       </div>
                     </div>
-                    <button type="button" className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold">Écouter ▶</button>
+                    <button type="button" className="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
+                      <IconPlay className="w-3.5 h-3.5 fill-current" />
+                      <span>Écouter</span>
+                    </button>
                   </div>
                 );
               }
@@ -2369,7 +3658,10 @@ function CourseEditor() {
                 return (
                   <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-5 my-4 bg-gray-50 dark:bg-white/5 flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-gray-900 dark:text-white">⚡ {cstr(block.content, "title")}</h4>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <IconExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" strokeWidth={1.75} />
+                        <span>{cstr(block.content, "title")}</span>
+                      </h4>
                       <p className="text-[11px] text-gray-400">{cstr(block.content, "url")}</p>
                     </div>
                     <a href={cstr(block.content, "url")} target="_blank" rel="noreferrer" className="px-3.5 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg">
@@ -2415,8 +3707,18 @@ function CourseEditor() {
                               {String.fromCharCode(65 + idx)}
                             </span>
                             <span className="text-sm font-medium flex-1">{opt}</span>
-                            {hasAnswered && isCorrect && <span className="text-emerald-500 font-bold">✓ Bonne réponse</span>}
-                            {hasAnswered && isChosen && !isCorrect && <span className="text-danger font-bold">✗ Incorrect</span>}
+                            {hasAnswered && isCorrect && (
+                              <span className="text-emerald-500 font-bold flex items-center gap-1 text-xs">
+                                <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                <span>Bonne réponse</span>
+                              </span>
+                            )}
+                            {hasAnswered && isChosen && !isCorrect && (
+                              <span className="text-danger font-bold flex items-center gap-1 text-xs">
+                                <IconX className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                <span>Incorrect</span>
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -2445,24 +3747,26 @@ function CourseEditor() {
                       <button
                         type="button"
                         onClick={() => setPreviewTfAnswer((prev) => ({ ...prev, [block.id]: true }))}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                           hasAnswered && expected === true ? "bg-emerald-500 text-white border-emerald-500" :
                           hasAnswered && userChoice === true && !expected ? "bg-danger text-white border-danger" :
                           "bg-white dark:bg-navy border-gray-200 dark:border-white/10 hover:border-emerald-500 text-emerald-600"
                         }`}
                       >
-                        ✓ VRAI
+                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        <span>VRAI</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPreviewTfAnswer((prev) => ({ ...prev, [block.id]: false }))}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                           hasAnswered && expected === false ? "bg-emerald-500 text-white border-emerald-500" :
                           hasAnswered && userChoice === false && expected ? "bg-danger text-white border-danger" :
                           "bg-white dark:bg-navy border-gray-200 dark:border-white/10 hover:border-danger text-danger"
                         }`}
                       >
-                        ✗ FAUX
+                        <IconX className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        <span>FAUX</span>
                       </button>
                     </div>
                     {hasAnswered && (
@@ -2481,7 +3785,10 @@ function CourseEditor() {
                 return (
                   <div key={block.id} className="border border-purple-500/20 bg-purple-500/5 rounded-2xl p-6 space-y-3 my-6">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-purple-600">🎯 Exercice Pratique</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
+                        <IconCheckSquare className="w-3.5 h-3.5" strokeWidth={1.8} />
+                        <span>Exercice Pratique</span>
+                      </span>
                       <span className="text-xs text-gray-400">À faire en autonomie</span>
                     </div>
                     <h3 className="text-base font-bold text-gray-900 dark:text-white">{cstr(block.content, "title")}</h3>
@@ -2491,29 +3798,39 @@ function CourseEditor() {
                         <button
                           type="button"
                           onClick={() => setPreviewRevealedExercises((prev) => ({ ...prev, [block.id]: { ...state, hint: !state.hint } }))}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-300 text-purple-700 dark:text-purple-300 bg-white dark:bg-navy"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-300 text-purple-700 dark:text-purple-300 bg-white dark:bg-navy inline-flex items-center gap-1.5 cursor-pointer hover:bg-purple-50 transition-colors"
                         >
-                          {state.hint ? "Masquer l'indice" : "💡 Voir l'indice"}
+                          <IconLightbulb className="w-3.5 h-3.5 text-purple-600" strokeWidth={1.8} />
+                          <span>{state.hint ? "Masquer l'indice" : "Voir l'indice"}</span>
                         </button>
                       )}
                       {cstr(block.content, "solution") && (
                         <button
                           type="button"
                           onClick={() => setPreviewRevealedExercises((prev) => ({ ...prev, [block.id]: { ...state, solution: !state.solution } }))}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-600 text-white"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                         >
-                          {state.solution ? "Masquer la solution" : "🔓 Découvrir la solution"}
+                          <KeyRound className="w-3.5 h-3.5 text-white" strokeWidth={1.8} />
+                          <span>{state.solution ? "Masquer la solution" : "Découvrir la solution"}</span>
                         </button>
                       )}
                     </div>
                     {state.hint && (
-                      <div className="p-3 bg-white dark:bg-navy rounded-xl border border-purple-200 text-xs text-gray-600 dark:text-gray-300">
-                        💡 <strong>Indice :</strong> {cstr(block.content, "hint")}
+                      <div className="p-3 bg-white dark:bg-navy rounded-xl border border-purple-200 text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                        <IconLightbulb className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" strokeWidth={1.8} />
+                        <div>
+                          <strong className="text-purple-700 dark:text-purple-300 font-bold">Indice : </strong>
+                          {cstr(block.content, "hint")}
+                        </div>
                       </div>
                     )}
                     {state.solution && (
-                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-900 dark:text-emerald-200">
-                        ✓ <strong>Solution détaillée :</strong> {cstr(block.content, "solution")}
+                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" strokeWidth={2.5} />
+                        <div>
+                          <strong className="text-emerald-700 dark:text-emerald-300 font-bold">Solution détaillée : </strong>
+                          {cstr(block.content, "solution")}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2535,8 +3852,9 @@ function CourseEditor() {
                       <p className="text-base font-bold text-gray-900 dark:text-white py-3">
                         {isFlipped ? cstr(block.content, "back") : cstr(block.content, "front")}
                       </p>
-                      <span className="text-[11px] text-gray-400 font-semibold">
-                        Cliquez pour {isFlipped ? "revenir à la question" : "révéler la réponse"} 🔄
+                      <span className="text-[11px] text-gray-400 font-semibold inline-flex items-center justify-center gap-1.5">
+                        <span>Cliquez pour {isFlipped ? "revenir à la question" : "révéler la réponse"}</span>
+                        <RotateCw className="w-3 h-3 text-gray-400 shrink-0" strokeWidth={1.8} />
                       </span>
                     </div>
                   </div>
@@ -2548,12 +3866,13 @@ function CourseEditor() {
                 return (
                   <div key={block.id} className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 rounded-2xl p-6 space-y-3 my-6">
                     <h3 className="text-base font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
-                      <span>★</span> {cstr(block.content, "title") || "Points clés à retenir"}
+                      <IconStar className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2} />
+                      <span>{cstr(block.content, "title") || "Points clés à retenir"}</span>
                     </h3>
                     <ul className="space-y-1.5 text-xs text-gray-700 dark:text-gray-200">
                       {carr(block.content, "points").map((p, pIdx) => (
                         <li key={pIdx} className="flex items-start gap-2">
-                          <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 font-bold shrink-0 mt-0.5" strokeWidth={2.5} />
                           <span>{p}</span>
                         </li>
                       ))}
@@ -2567,8 +3886,9 @@ function CourseEditor() {
                 const links = (block.content.links as { title: string; url: string; type: string }[]) || [];
                 return (
                   <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-6 space-y-3 my-6 bg-gray-50 dark:bg-white/5">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
-                      📚 Ressources recommandées & Bibliographie
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
+                      <IconLibrary className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" strokeWidth={1.8} />
+                      <span>Ressources recommandées & Bibliographie</span>
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                       {links.map((lnk, lIdx) => (
@@ -2583,7 +3903,7 @@ function CourseEditor() {
                             <p className="font-bold text-gray-900 dark:text-white">{lnk.title}</p>
                             <span className="text-[10px] text-primary">{lnk.type || "Lien"}</span>
                           </div>
-                          <span>↗</span>
+                          <IconExternalLink className="w-3.5 h-3.5 text-gray-400 shrink-0" strokeWidth={1.8} />
                         </a>
                       ))}
                     </div>
@@ -2591,15 +3911,126 @@ function CourseEditor() {
                 );
               }
 
+              // 20. Point d'histoire (accordéon déroulant avec photo toujours visible)
+              if (block.type === "history") {
+                const sub = cstr(block.content, "subtitle") || "Point d'histoire";
+                const era = cstr(block.content, "era");
+                const tit = cstr(block.content, "title") || "Point d'histoire";
+                const img = cstr(block.content, "imageUrl") || "https://upload.wikimedia.org/wikipedia/commons/a/a2/George_EP_Box.jpg";
+                const cap = cstr(block.content, "caption");
+                const qte = cstr(block.content, "quote");
+                const txt = cstr(block.content, "content");
+                const defOpen = Boolean(block.content.defaultOpen);
+
+                return (
+                  <details
+                    key={block.id}
+                    className="group border border-amber-200/80 dark:border-amber-700/30 bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl overflow-hidden transition-all shadow-xs my-6"
+                    open={defOpen ? true : undefined}
+                  >
+                    <summary className="flex items-center justify-between gap-4 p-4 sm:p-5 cursor-pointer list-none select-none hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors">
+                      <div className="flex items-center gap-4 min-w-0">
+                        {/* Photo / Portrait toujours visible */}
+                        <div className="relative shrink-0">
+                          <img
+                            src={img}
+                            alt={cap || tit}
+                            className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border-2 border-amber-300 dark:border-amber-600/50"
+                            loading="lazy"
+                            onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                          />
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                            <IconHistory className="w-3 h-3 text-white" strokeWidth={2} />
+                          </div>
+                        </div>
+
+                        {/* Textes du summary */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-600/15 text-amber-900 dark:text-amber-200 border border-amber-300/50 dark:border-amber-700/50">
+                              {sub}
+                            </span>
+                            {era && (
+                              <span className="text-xs text-amber-800/80 dark:text-amber-400 font-medium">
+                                ({era})
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                            {tit}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Indicateur déplier / replier */}
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 shrink-0">
+                        <span className="hidden sm:inline text-[11px] font-medium opacity-80 group-open:hidden">
+                          Dérouler le récit
+                        </span>
+                        <span className="hidden sm:inline text-[11px] font-medium opacity-80 hidden group-open:inline">
+                          Replier
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                      </div>
+                    </summary>
+
+                    {/* Récit historique déroulé */}
+                    <div className="border-t border-amber-200/60 dark:border-amber-800/30 p-5 sm:p-6 space-y-4 bg-white/70 dark:bg-navy/50">
+                      {qte && (
+                        <blockquote className="border-l-4 border-amber-500 pl-4 py-2 italic text-sm text-amber-950 dark:text-amber-200 bg-amber-100/40 dark:bg-amber-900/20 rounded-r-xl">
+                          {qte}
+                        </blockquote>
+                      )}
+                      <div className="text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-serif">
+                        {txt}
+                      </div>
+                      {cap && (
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 italic pt-1 flex items-center gap-1.5">
+                          <ImageIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" strokeWidth={1.8} />
+                          <span>{cap}</span>
+                        </p>
+                      )}
+                    </div>
+                  </details>
+                );
+              }
+
               return null;
             })}
+            <div className="clear-both" />
           </div>
-
         </div>
-      )}
 
-    </div>
-  );
+        {/* FLANC EXTÉRIEUR DROIT (Positionné à l'extérieur des limites du dock) */}
+        {(tocPlacement === "right" || rightAuthorBlocks.length > 0) && (
+          <aside className="hidden min-[1540px]:block absolute left-[calc(100%+1.5rem)] top-0 bottom-0 w-72 2xl:w-80 z-20 pointer-events-none">
+            {/* Sommaire : Prioritaire & Toujours visible */}
+            {tocPlacement === "right" && (
+              <div className="sticky top-[160px] pointer-events-auto">
+                {renderTableOfContents()}
+              </div>
+            )}
+
+            {/* Fiche auteur flanc droit : au début du cours, disparaît au scroll si sommaire présent */}
+            {rightAuthorBlocks.length > 0 && (
+              <div className={`pointer-events-auto space-y-4 ${
+                tocPlacement === "right"
+                  ? isScrolled
+                    ? "opacity-0 pointer-events-none max-h-0 overflow-hidden transition-all duration-300"
+                    : "mt-4 transition-all duration-300"
+                  : "mt-0"
+              }`}>
+                {rightAuthorBlocks.map((b) => renderAuthorCard(b))}
+              </div>
+            )}
+          </aside>
+        )}
+
+      </div>
+    )}
+
+  </div>
+);
 }
 
 // ─── Éditeur de Parcours MOOC ─────────────────────────────────────────────────
@@ -2687,7 +4118,7 @@ function MOOCEditor() {
                         isSelected ? "bg-primary text-white" : "border border-gray-300 dark:border-white/20"
                       }`}
                     >
-                      {isSelected ? "✓" : ""}
+                      {isSelected ? <Check className="w-3.5 h-3.5 text-white" strokeWidth={2.5} /> : null}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold leading-snug line-clamp-2">{c.title}</p>
@@ -2783,16 +4214,18 @@ function MOOCEditor() {
                       onClick={() => move(c.id, "up")}
                       disabled={i === 0}
                       className="p-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                      title="Monter"
                     >
-                      ▲
+                      <ChevronUp className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => move(c.id, "down")}
                       disabled={i === ordered.length - 1}
                       className="p-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                      title="Descendre"
                     >
-                      ▼
+                      <ChevronDown className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -2800,7 +4233,7 @@ function MOOCEditor() {
                       className="p-1 text-xs text-danger hover:bg-danger/10 rounded ml-1 cursor-pointer"
                       title="Retirer"
                     >
-                      ✕
+                      <IconX className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -3103,10 +4536,18 @@ function AppEditor() {
 // ─── Studio IA (Pipelines automatisés) ────────────────────────────────────────
 
 function AIStudio() {
-  const pipelines = [
+  const pipelines: {
+    href: string;
+    icon: React.ReactNode;
+    title: string;
+    desc: string;
+    badge: string;
+    tag: string;
+    cta: string;
+  }[] = [
     {
       href: "/studio/excel-quiz",
-      icon: "📊",
+      icon: <IconTable className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={1.8} />,
       title: "Excel → Quiz QCM",
       desc: "Transformez vos tableaux Excel et grilles pédagogiques en quiz interactifs calibrés avec explications détaillées.",
       badge: "Génération QCM",
@@ -3115,7 +4556,7 @@ function AIStudio() {
     },
     {
       href: "/studio/pdf-course",
-      icon: "📄",
+      icon: <IconFileText className="w-6 h-6 text-blue-600 dark:text-blue-400" strokeWidth={1.8} />,
       title: "PDF → Cours structuré",
       desc: "Uploadez vos polycopiés, articles ou supports de cours pour générer automatiquement un plan de cours Markdown complet.",
       badge: "Extraction Documentaire",
@@ -3124,7 +4565,7 @@ function AIStudio() {
     },
     {
       href: "/studio/video-course",
-      icon: "🎬",
+      icon: <IconPlay className="w-6 h-6 text-rose-600 dark:text-rose-400" strokeWidth={1.8} />,
       title: "Vidéo + Slides → Cours complet",
       desc: "Synchronisez une vidéo de cours et votre diaporama PPTX/PDF pour synthétiser les concepts clés et les quiz associés.",
       badge: "Multimodalité",
@@ -3133,7 +4574,7 @@ function AIStudio() {
     },
     {
       href: "/studio/ai-tools",
-      icon: "🧠",
+      icon: <LucideSparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={1.8} />,
       title: "Boîte à Outils Pédagogiques",
       desc: "À partir de n'importe quel texte de cours, créez instantanément des fiches de révision, flashcards, cartes mentales et FAQ.",
       badge: "Synthèse IA",
@@ -3147,7 +4588,8 @@ function AIStudio() {
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10 border border-primary/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary dark:text-secondary mb-2">
-            <span>✨</span> Intelligence Artificielle Hi! PARIS
+            <LucideSparkles className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
+            <span>Intelligence Artificielle Hi! PARIS</span>
           </span>
           <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">
             Studio d&apos;Accélération Pédagogique IA
@@ -3166,7 +4608,7 @@ function AIStudio() {
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                <span className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
                   {p.icon}
                 </span>
                 <div className="flex items-center gap-2">
@@ -3211,84 +4653,84 @@ export default function StudioPage() {
   }, [mode]);
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="w-full max-w-[1600px] 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
 
       {/* En-tête harmonisé avec le Design System Hi! PARIS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              Hi! Studio
-            </h1>
-            <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary text-white shadow-xs">
-              Espace Créateur
-            </span>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 pb-6">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                <span className="text-[#FF034D]">Hi!</span> Studio
+              </h1>
+              <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary text-white shadow-xs">
+                Espace Créateur
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {currentTab.desc}
+            </p>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {currentTab.desc}
-          </p>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/courses"
+              className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              Catalogue public
+            </Link>
+            <Link
+              href="/dashboard"
+              className="text-xs font-semibold px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 transition-colors"
+            >
+              Tableau de bord
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/courses"
-            className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            Catalogue public
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-xs font-semibold px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 transition-colors"
-          >
-            Tableau de bord
-          </Link>
-        </div>
-      </div>
-
-      {/* Barre d'onglets moderne (Segmented Control) */}
-      <div className="overflow-x-auto pb-1 scrollbar-none">
-        <div className="flex gap-2 bg-gray-100 dark:bg-navy-dark border border-gray-200 dark:border-white/10 rounded-2xl p-1.5 w-fit min-w-full sm:min-w-0">
-          {MODE_TABS.map((tab) => {
-            const isActive = mode === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setMode(tab.key)}
-                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.01]"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5"
-                }`}
-              >
-                <span className={isActive ? "text-white" : "text-gray-500"}>
-                  {tab.icon}
-                </span>
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`text-[10px] px-2 py-0.2 rounded-full font-semibold ${
-                      isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary dark:text-white"
-                    }`}
-                  >
-                    {tab.badge}
+        {/* Barre d'onglets moderne (Segmented Control) */}
+        <div className="overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex gap-2 bg-gray-100 dark:bg-navy-dark border border-gray-200 dark:border-white/10 rounded-2xl p-1.5 w-fit min-w-full sm:min-w-0">
+            {MODE_TABS.map((tab) => {
+              const isActive = mode === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setMode(tab.key)}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.01]"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5"
+                  }`}
+                >
+                  <span className={isActive ? "text-white" : "text-gray-500"}>
+                    {tab.icon}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  <span>{tab.label}</span>
+                  {tab.badge && (
+                    <span
+                      className={`text-[10px] px-2 py-0.2 rounded-full font-semibold ${
+                        isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary dark:text-white"
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Contenu de l'éditeur selon le mode sélectionné */}
-      <div>
-        {mode === "course" && <CourseEditor />}
-        {mode === "mooc"   && <MOOCEditor />}
-        {mode === "video"  && <VideoEditor />}
-        {mode === "app"    && <AppEditor />}
-        {mode === "ai"     && <AIStudio />}
-      </div>
+        {/* Contenu de l'éditeur selon le mode sélectionné */}
+        <div>
+          {mode === "course" && <CourseEditor />}
+          {mode === "mooc"   && <MOOCEditor />}
+          {mode === "video"  && <VideoEditor />}
+          {mode === "app"    && <AppEditor />}
+          {mode === "ai"     && <AIStudio />}
+        </div>
 
-    </div>
-  );
-}
+      </div>
+    );
+  }
