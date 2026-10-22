@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { coursesApi } from "@/lib/api";
 import type { CourseResponse } from "@/lib/api";
@@ -50,6 +50,8 @@ import {
   Eye,
   Edit3,
   FileDown,
+  FileUp,
+  Printer,
   ListTree,
   Plus,
   X as IconX,
@@ -68,6 +70,17 @@ import {
   RotateCw,
   AlertCircle,
   Mail,
+  Bold as IconBold,
+  Italic as IconItalic,
+  Underline as IconUnderline,
+  Type as IconType,
+  Highlighter as IconHighlighter,
+  Sliders as IconSliders,
+  Wand2 as IconWand,
+  RefreshCw as IconRefreshCw,
+  Layers as IconLayers,
+  CheckCircle2 as IconCheckCircle2,
+  AlignLeft as IconAlignLeft,
   type LucideIcon,
 } from "lucide-react";
 
@@ -83,6 +96,208 @@ const LEVEL_MAP: Record<string, string> = {
   Intermédiaire: "intermediate",
   Avancé: "advanced",
 };
+
+// ─── Typographie & Polices de texte ──────────────────────────────────────────
+
+type FontFamilyKey = "sans" | "serif" | "mono" | "rounded" | "accessible";
+
+const FONT_FAMILIES: {
+  key: FontFamilyKey;
+  label: string;
+  cssClass: string;
+  fontStyle: string;
+}[] = [
+  { key: "sans", label: "Sans-Serif (Inter)", cssClass: "font-sans", fontStyle: "Inter, -apple-system, BlinkMacSystemFont, sans-serif" },
+  { key: "serif", label: "Serif (Classique)", cssClass: "font-serif", fontStyle: "Georgia, Cambria, 'Times New Roman', serif" },
+  { key: "mono", label: "Monospace (Code)", cssClass: "font-mono", fontStyle: "'Fira Code', 'JetBrains Mono', Consolas, monospace" },
+  { key: "rounded", label: "Arrondie (Pédagogique)", cssClass: "font-sans tracking-wide", fontStyle: "'Outfit', 'Quicksand', 'Nunito', sans-serif" },
+  { key: "accessible", label: "Accessible (Lisible)", cssClass: "font-sans tracking-wider", fontStyle: "'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif" },
+];
+
+const FONT_SIZES = [12, 13, 14, 15, 16, 18, 20, 22, 24, 28];
+
+/**
+ * Moteur de rendu inline rapide et sécurisé pour le formatage riche :
+ * **gras**, *italique*, <u>souligné</u>, `code`, <mark>surligné</mark>, ==surligné==
+ */
+function renderFormattedText(text: string): React.ReactNode {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  return lines.map((line, lIdx) => {
+    const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|<u>.*?<\/u>|`[^`]+`|<mark>.*?<\/mark>|==[^=]+==)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.slice(lastIndex, match.index));
+      }
+
+      const token = match[0];
+      const key = `${lIdx}-${match.index}`;
+
+      if (token.startsWith("**") && token.endsWith("**")) {
+        parts.push(<strong key={key} className="font-bold text-gray-900 dark:text-white">{token.slice(2, -2)}</strong>);
+      } else if (token.startsWith("*") && token.endsWith("*")) {
+        parts.push(<em key={key} className="italic text-gray-800 dark:text-gray-200">{token.slice(1, -1)}</em>);
+      } else if (token.startsWith("<u>") && token.endsWith("</u>")) {
+        parts.push(<span key={key} className="underline decoration-[#FF034D] decoration-2 underline-offset-2">{token.slice(3, -4)}</span>);
+      } else if (token.startsWith("`") && token.endsWith("`")) {
+        parts.push(<code key={key} className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 font-mono text-[12px] text-primary dark:text-blue-300">{token.slice(1, -1)}</code>);
+      } else if ((token.startsWith("<mark>") && token.endsWith("</mark>")) || (token.startsWith("==") && token.endsWith("=="))) {
+        const inner = token.startsWith("<mark>") ? token.slice(6, -7) : token.slice(2, -2);
+        parts.push(<mark key={key} className="bg-amber-200 dark:bg-amber-900/60 text-gray-900 dark:text-white px-1 py-0.5 rounded font-medium">{inner}</mark>);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < line.length) {
+      parts.push(line.slice(lastIndex));
+    }
+
+    return (
+      <span key={lIdx}>
+        {parts}
+        {lIdx < lines.length - 1 && <br />}
+      </span>
+    );
+  });
+}
+
+/**
+ * Convertit une chaîne formatée (markdown / tokens) en HTML riche sécurisé pour l'éditeur Word WYSIWYG
+ */
+function formattedTextToHtml(text: string): string {
+  if (!text) return "";
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  html = html
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/gi, "<u>$1</u>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/==([^=]+)==/g, "<mark>$1</mark>")
+    .replace(/\n/g, "<br>");
+
+  return html;
+}
+
+/**
+ * Normalise et convertit le HTML produit par contentEditable en format texte structuré (Markdown standard)
+ */
+function htmlToFormattedText(html: string): string {
+  if (!html) return "";
+  if (typeof window === "undefined") return html;
+
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+
+  function walk(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      const inner = Array.from(el.childNodes).map(walk).join("");
+
+      if (tag === "b" || tag === "strong") return `**${inner}**`;
+      if (tag === "i" || tag === "em") return `*${inner}*`;
+      if (tag === "u") return `<u>${inner}</u>`;
+      if (tag === "code") return `\`${inner}\``;
+      if (tag === "mark") return `==${inner}==`;
+      if (tag === "br") return "\n";
+      if (tag === "div" || tag === "p") return inner ? `\n${inner}` : "\n";
+      if (el.style.fontWeight === "bold" || Number(el.style.fontWeight) >= 700) return `**${inner}**`;
+      if (el.style.fontStyle === "italic") return `*${inner}*`;
+      if (el.style.textDecoration && el.style.textDecoration.includes("underline")) return `<u>${inner}</u>`;
+      if (el.style.backgroundColor && el.style.backgroundColor !== "transparent") return `==${inner}==`;
+
+      return inner;
+    }
+    return "";
+  }
+
+  const res = Array.from(temp.childNodes).map(walk).join("");
+  return res.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
+ * Composant d'édition de texte in-situ de type Microsoft Word
+ * Garantit l'absence de saut de curseur, la synchronisation temps réel et le support des raccourcis.
+ */
+function WordEditableText({
+  value,
+  onChange,
+  onFocus,
+  onContextMenu,
+  className = "",
+  as: Tag = "div",
+  blockId,
+  isWordMode = true,
+  placeholder = "Cliquez pour taper...",
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  onFocus?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+  className?: string;
+  as?: any;
+  blockId?: number;
+  isWordMode?: boolean;
+  placeholder?: string;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const isEditingRef = useRef(false);
+
+  useEffect(() => {
+    if (ref.current && !isEditingRef.current) {
+      const html = formattedTextToHtml(value);
+      if (ref.current.innerHTML !== html) {
+        ref.current.innerHTML = html;
+      }
+    }
+  }, [value]);
+
+  return (
+    <Tag
+      ref={ref}
+      contentEditable={isWordMode}
+      suppressContentEditableWarning
+      data-block-id={blockId}
+      onFocus={() => {
+        isEditingRef.current = true;
+        onFocus?.();
+      }}
+      onBlur={() => {
+        isEditingRef.current = false;
+        if (ref.current) {
+          const newVal = htmlToFormattedText(ref.current.innerHTML);
+          onChange(newVal);
+        }
+      }}
+      onInput={() => {
+        if (ref.current) {
+          const newVal = htmlToFormattedText(ref.current.innerHTML);
+          onChange(newVal);
+        }
+      }}
+      onContextMenu={onContextMenu}
+      className={`outline-none transition-all ${
+        isWordMode
+          ? "hover:ring-1 hover:ring-primary/30 focus:ring-2 focus:ring-primary/50 focus:bg-primary/[0.02] rounded px-1 -mx-1 cursor-text"
+          : ""
+      } ${className}`}
+      data-placeholder={placeholder}
+    />
+  );
+}
 
 /**
  * Extraction intelligente d'ID YouTube à partir d'un ID brut ou d'une URL complète.
@@ -459,13 +674,14 @@ const CATEGORY_TABS: { key: BlockCategory; label: string }[] = [
 
 // ─── Configuration Ruban de type Word & Outils Studio ─────────────────────────
 
-type RibbonTab = "home" | "insert" | "eval" | "summary" | "view";
+type RibbonTab = "home" | "insert" | "eval" | "summary" | "equalizer" | "view";
 
 const RIBBON_TABS: { key: RibbonTab; label: string }[] = [
   { key: "home", label: "Accueil" },
   { key: "insert", label: "Insertion" },
   { key: "eval", label: "Évaluation" },
   { key: "summary", label: "Synthèse" },
+  { key: "equalizer", label: "Égaliseur & Interprétation" },
   { key: "view", label: "Affichage" },
 ];
 
@@ -645,6 +861,13 @@ function RibbonGroup({
 
 type EditorBlock = { id: number; type: string; content: Record<string, unknown> };
 
+interface HistorySnapshot {
+  blocks: EditorBlock[];
+  title: string;
+  courseFont?: FontFamilyKey;
+  courseFontSize?: number;
+}
+
 const cstr = (c: Record<string, unknown>, k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
 const carr = (c: Record<string, unknown>, k: string) => (Array.isArray(c[k]) ? (c[k] as string[]) : []);
 const cnum = (c: Record<string, unknown>, k: string) => (typeof c[k] === "number" ? (c[k] as number) : 0);
@@ -718,6 +941,224 @@ function CourseEditor() {
   // Option pour afficher un Sommaire Dynamique ("left" = haut gauche, "right" = haut droit, "none" = masqué)
   type TocPlacement = "left" | "right" | "none";
   const [tocPlacement, setTocPlacement] = useState<TocPlacement>("left");
+
+  // Typographie & Polices du cours (style Word / Office)
+  const [courseFont, setCourseFont] = useState<FontFamilyKey>("sans");
+  const [courseFontSize, setCourseFontSize] = useState<number>(16);
+  const [equalizerMessage, setEqualizerMessage] = useState<string | null>(null);
+
+  // ─── Historique Annuler / Rétablir (Undo / Redo) ───
+  const [undoStack, setUndoStack] = useState<HistorySnapshot[]>([]);
+  const [redoStack, setRedoStack] = useState<HistorySnapshot[]>([]);
+  const isUndoRedoActionRef = useRef(false);
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const pushHistoryState = useCallback((_description?: string) => {
+    if (isUndoRedoActionRef.current) return;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    isTypingRef.current = false;
+
+    setUndoStack((prev) => {
+      const snap: HistorySnapshot = {
+        blocks: JSON.parse(JSON.stringify(blocks)),
+        title,
+        courseFont,
+        courseFontSize,
+      };
+      const next = [...prev, snap];
+      if (next.length > 50) next.shift();
+      return next;
+    });
+    setRedoStack([]);
+  }, [blocks, title, courseFont, courseFontSize]);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    isTypingRef.current = false;
+
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      if (document.activeElement.getAttribute("contenteditable") === "true") {
+        document.activeElement.blur();
+      }
+    }
+
+    const previousSnapshot = undoStack[undoStack.length - 1];
+    const newUndoStack = undoStack.slice(0, -1);
+
+    const currentSnapshot: HistorySnapshot = {
+      blocks: JSON.parse(JSON.stringify(blocks)),
+      title,
+      courseFont,
+      courseFontSize,
+    };
+
+    isUndoRedoActionRef.current = true;
+    setRedoStack((prev) => [...prev, currentSnapshot]);
+    setUndoStack(newUndoStack);
+    setBlocks(previousSnapshot.blocks);
+    setTitle(previousSnapshot.title);
+    if (previousSnapshot.courseFont) setCourseFont(previousSnapshot.courseFont);
+    if (previousSnapshot.courseFontSize) setCourseFontSize(previousSnapshot.courseFontSize);
+    setEqualizerMessage("↶ Action annulée (Ctrl+Z)");
+
+    setTimeout(() => {
+      isUndoRedoActionRef.current = false;
+    }, 60);
+  }, [undoStack, blocks, title, courseFont, courseFontSize]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    isTypingRef.current = false;
+
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      if (document.activeElement.getAttribute("contenteditable") === "true") {
+        document.activeElement.blur();
+      }
+    }
+
+    const nextSnapshot = redoStack[redoStack.length - 1];
+    const newRedoStack = redoStack.slice(0, -1);
+
+    const currentSnapshot: HistorySnapshot = {
+      blocks: JSON.parse(JSON.stringify(blocks)),
+      title,
+      courseFont,
+      courseFontSize,
+    };
+
+    isUndoRedoActionRef.current = true;
+    setUndoStack((prev) => [...prev, currentSnapshot]);
+    setRedoStack(newRedoStack);
+    setBlocks(nextSnapshot.blocks);
+    setTitle(nextSnapshot.title);
+    if (nextSnapshot.courseFont) setCourseFont(nextSnapshot.courseFont);
+    if (nextSnapshot.courseFontSize) setCourseFontSize(nextSnapshot.courseFontSize);
+    setEqualizerMessage("↷ Action rétablie (Ctrl+Y)");
+
+    setTimeout(() => {
+      isUndoRedoActionRef.current = false;
+    }, 60);
+  }, [redoStack, blocks, title, courseFont, courseFontSize]);
+
+  function handleTitleChange(newTitle: string) {
+    if (!isUndoRedoActionRef.current && !isTypingRef.current) {
+      pushHistoryState("Modification du titre");
+      isTypingRef.current = true;
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 800);
+    setTitle(newTitle);
+  }
+
+  function exportCourseJson() {
+    try {
+      const data = {
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        title,
+        category,
+        level,
+        school,
+        access,
+        courseFont,
+        courseFontSize,
+        blocks,
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const sanitized = (title || "cours")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .slice(0, 40);
+      a.download = `cours-${sanitized || "sans-titre"}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setEqualizerMessage("✓ Structure du cours exportée en JSON");
+    } catch {
+      setError("Erreur lors de l'export JSON");
+    }
+  }
+
+  function triggerImportCourseJson() {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }
+
+  function handleImportJsonFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (parsed && Array.isArray(parsed.blocks)) {
+          pushHistoryState("Import de cours");
+          if (parsed.title) setTitle(parsed.title);
+          if (parsed.category) setCategory(parsed.category);
+          if (parsed.level) setLevel(parsed.level);
+          if (parsed.school) setSchool(parsed.school);
+          if (parsed.courseFont) setCourseFont(parsed.courseFont);
+          if (parsed.courseFontSize) setCourseFontSize(parsed.courseFontSize);
+          setBlocks(parsed.blocks);
+          setEqualizerMessage(`✓ Cours importé avec succès (${parsed.blocks.length} blocs)`);
+        } else {
+          setError("Fichier JSON invalide pour un cours.");
+        }
+      } catch {
+        setError("Erreur lors de la lecture du fichier JSON.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function resetEditor() {
+    pushHistoryState("Nouveau cours");
+    setTitle("");
+    setBlocks([{ id: Date.now(), type: "heading", content: { content: "1. Nouveau chapitre", level: "h2" } }]);
+    setSelectedBlockId(null);
+    setEqualizerMessage("✓ Nouvel éditeur initialisé (Annulable avec Ctrl+Z)");
+  }
+
+  const activeFontConfig = useMemo(() => {
+    return FONT_FAMILIES.find((f) => f.key === courseFont) || FONT_FAMILIES[0];
+  }, [courseFont]);
+
+  // État du menu contextuel flottant Word en mode aperçu
+  const [floatingToolbar, setFloatingToolbar] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    selectedText: string;
+    blockId: number | null;
+  }>({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    selectedText: "",
+    blockId: null,
+  });
 
   // État du quadrillage de repérage (désactivé)
   const [showDebugGrid, setShowDebugGrid] = useState(false);
@@ -801,6 +1242,398 @@ function CourseEditor() {
     }
   }
 
+  // Fermer le menu flottant si on clique en dehors
+  useEffect(() => {
+    function handleGlobalClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.closest(".word-floating-toolbar")) return;
+      setFloatingToolbar((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));
+    }
+
+    window.addEventListener("mousedown", handleGlobalClick);
+    return () => window.removeEventListener("mousedown", handleGlobalClick);
+  }, []);
+
+  // Détection de la sélection de texte dans le mode aperçu
+  function handlePreviewMouseUp() {
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) return;
+
+      const text = selection.toString().trim();
+      if (text.length === 0) return;
+
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        let node: Node | null = range.commonAncestorContainer;
+        let bId: number | null = null;
+        while (node && node !== document.body) {
+          if (node instanceof HTMLElement && node.dataset.blockId) {
+            bId = Number(node.dataset.blockId);
+            break;
+          }
+          node = node.parentNode;
+        }
+
+        const toolbarWidth = 330;
+        const x = Math.min(window.innerWidth - toolbarWidth - 16, Math.max(16, rect.left + rect.width / 2 - toolbarWidth / 2));
+        const y = Math.max(16, rect.top - 55);
+
+        setFloatingToolbar({
+          isOpen: true,
+          x,
+          y,
+          selectedText: text,
+          blockId: bId,
+        });
+      } catch {
+        // Fallback
+      }
+    }, 20);
+  }
+
+  // Clic droit dans le mode aperçu (ouvre le menu contextuel flottant Word)
+  function handlePreviewContextMenu(e: React.MouseEvent, bId: number) {
+    e.preventDefault();
+    const selection = window.getSelection();
+    const text = selection && !selection.isCollapsed ? selection.toString().trim() : "";
+
+    const toolbarWidth = 330;
+    const x = Math.min(window.innerWidth - toolbarWidth - 16, Math.max(16, e.clientX - 100));
+    const y = Math.max(16, e.clientY - 60);
+
+    setFloatingToolbar({
+      isOpen: true,
+      x,
+      y,
+      selectedText: text,
+      blockId: bId,
+    });
+  }
+
+  // ─── Espace d'Interprétation & Égaliseur de Modifications Word (Intégré au Dock) ───
+  const [isWordPageMode, setIsWordPageMode] = useState(true);
+  const [showRawInspector, setShowRawInspector] = useState(false);
+
+  // Auto-dismiss equalizer message after 3.5s
+  useEffect(() => {
+    if (!equalizerMessage) return;
+    const t = setTimeout(() => setEqualizerMessage(null), 3500);
+    return () => clearTimeout(t);
+  }, [equalizerMessage]);
+
+  // Statistiques en direct du cours (Mots, Caractères, Blocs, Temps de lecture)
+  const courseStats = useMemo(() => {
+    let words = 0;
+    let chars = 0;
+    blocks.forEach((b) => {
+      const texts: string[] = [];
+      Object.values(b.content).forEach((v) => {
+        if (typeof v === "string") texts.push(v);
+        else if (Array.isArray(v)) {
+          v.forEach((item) => {
+            if (typeof item === "string") texts.push(item);
+            else if (typeof item === "object" && item) {
+              Object.values(item).forEach((iv) => {
+                if (typeof iv === "string") texts.push(iv);
+              });
+            }
+          });
+        }
+      });
+      const combined = texts.join(" ");
+      chars += combined.length;
+      words += combined.trim().split(/\s+/).filter(Boolean).length;
+    });
+
+    const readingTime = Math.max(1, Math.ceil(words / 200));
+    return { words, chars, readingTime };
+  }, [blocks]);
+
+  // Conversion rapide d'un bloc en un autre type (Modulation Word facile)
+  function convertBlockType(blockId: number, newType: string) {
+    pushHistoryState(`Conversion du bloc #${blockId} vers ${newType}`);
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.id !== blockId) return b;
+        const text = cstr(b.content, "content") || cstr(b.content, "quote") || cstr(b.content, "title") || "";
+        if (newType === "heading") {
+          return { ...b, type: "heading", content: { content: text || "Nouveau titre de section", level: "h2" } };
+        }
+        if (newType === "heading-h3") {
+          return { ...b, type: "heading", content: { content: text || "Nouveau sous-titre", level: "h3" } };
+        }
+        if (newType === "text") {
+          return { ...b, type: "text", content: { content: text || "Nouveau paragraphe explicatif..." } };
+        }
+        if (newType === "callout") {
+          return { ...b, type: "callout", content: { variant: "tip", title: "Point clé à retenir", content: text || "Détail de l'astuce pédagogique" } };
+        }
+        if (newType === "quote") {
+          return { ...b, type: "quote", content: { quote: text || "Citation clé", author: "Auteur / Référence" } };
+        }
+        return b;
+      })
+    );
+    setSelectedBlockId(blockId);
+    setEqualizerMessage(`✓ Bloc #${blockId} converti en ${newType}`);
+  }
+
+  // Égalisation 1 : Typographie globale
+  function equalizeTypography(fontKey?: FontFamilyKey) {
+    pushHistoryState("Égalisation de la typographie");
+    const chosen = fontKey || courseFont;
+    setCourseFont(chosen);
+    setEqualizerMessage(`✓ Typographie égalisée sur « ${FONT_FAMILIES.find((f) => f.key === chosen)?.label} » (${courseFontSize}px)`);
+  }
+
+  // Égalisation 2 : Harmonisation des espacements & sauts de ligne
+  function equalizeSpacing() {
+    pushHistoryState("Égalisation des espacements");
+    setBlocks((prev) =>
+      prev.map((b) => {
+        const updated = { ...b.content };
+        let changed = false;
+        Object.keys(updated).forEach((k) => {
+          if (typeof updated[k] === "string") {
+            const raw = updated[k] as string;
+            const cleaned = raw.replace(/\n{3,}/g, "\n\n").replace(/[ \t]{2,}/g, " ").trim();
+            if (cleaned !== raw) {
+              updated[k] = cleaned;
+              changed = true;
+            }
+          }
+        });
+        return changed ? { ...b, content: updated } : b;
+      })
+    );
+    setEqualizerMessage("✓ Espacements et retours à la ligne égalisés sur l'ensemble du cours");
+  }
+
+  // Égalisation 3 : Nettoyage et normalisation du balisage
+  function equalizeMarkup() {
+    pushHistoryState("Nettoyage du balisage");
+    setBlocks((prev) =>
+      prev.map((b) => {
+        const updated = { ...b.content };
+        let changed = false;
+        Object.keys(updated).forEach((k) => {
+          if (typeof updated[k] === "string") {
+            let raw = updated[k] as string;
+            raw = raw.replace(/\*\*\s*\*\*/g, "");
+            raw = raw.replace(/\*\s*\*/g, "");
+            raw = raw.replace(/<u>\s*<\/u>/gi, "");
+            raw = raw.replace(/==\s*==/g, "");
+            raw = raw.replace(/`\s*`/g, "");
+            if (raw !== updated[k]) {
+              updated[k] = raw;
+              changed = true;
+            }
+          }
+        });
+        return changed ? { ...b, content: updated } : b;
+      })
+    );
+    setEqualizerMessage("✓ Balisage et formatages orphelins nettoyés et égalisés");
+  }
+
+  // Égalisation 4 : Numérotation séquentielle des chapitres et titres
+  function equalizeHeadings() {
+    pushHistoryState("Numérotation des titres");
+    let h2Counter = 1;
+    let h3Counter = 1;
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.type !== "heading") return b;
+        const lvl = cstr(b.content, "level") || "h2";
+        const rawContent = cstr(b.content, "content").replace(/^(\d+(\.\d+)*\.\s*)+/, "").trim();
+        let numbered = rawContent;
+        if (lvl === "h2") {
+          numbered = `${h2Counter}. ${rawContent}`;
+          h2Counter++;
+          h3Counter = 1;
+        } else if (lvl === "h3") {
+          numbered = `${Math.max(1, h2Counter - 1)}.${h3Counter} ${rawContent}`;
+          h3Counter++;
+        }
+        return { ...b, content: { ...b.content, content: numbered } };
+      })
+    );
+    setEqualizerMessage("✓ Numérotation séquentielle des titres et chapitres égalisée");
+  }
+
+  // Bloc actuellement ciblé pour l'espace d'interprétation
+  const activeBlockForInspection = useMemo(() => {
+    return blocks.find((b) => b.id === (selectedBlockId || floatingToolbar.blockId)) || blocks[0] || null;
+  }, [blocks, selectedBlockId, floatingToolbar.blockId]);
+
+  // Application du formatage de type Word (Gras, Italique, Souligné, Code, Surlignage)
+  function applyFormatting(formatType: "bold" | "italic" | "underline" | "code" | "highlight", targetBlockId?: number | null) {
+    pushHistoryState(`Formatage ${formatType}`);
+    const bId = targetBlockId ?? floatingToolbar.blockId ?? selectedBlockId;
+
+    // 1. Essai de formatage natif execCommand si du texte est sélectionné dans un élément contentEditable
+    if (typeof document !== "undefined") {
+      let executed = false;
+      try {
+        if (formatType === "bold") {
+          executed = document.execCommand("bold", false);
+        } else if (formatType === "italic") {
+          executed = document.execCommand("italic", false);
+        } else if (formatType === "underline") {
+          executed = document.execCommand("underline", false);
+        } else if (formatType === "highlight") {
+          executed = document.execCommand("hiliteColor", false, "#fef08a") || document.execCommand("backColor", false, "#fef08a");
+        }
+
+        if (executed && bId) {
+          const activeEl = document.activeElement;
+          const targetEl = (activeEl && (activeEl as HTMLElement).dataset.blockId === String(bId))
+            ? (activeEl as HTMLElement)
+            : (document.querySelector(`[data-block-id="${bId}"]`) as HTMLElement | null);
+
+          if (targetEl) {
+            const block = blocks.find((b) => b.id === bId);
+            if (block) {
+              let fieldKey = "content";
+              if (block.type === "quote" && cstr(block.content, "quote")) fieldKey = "quote";
+              const updatedText = htmlToFormattedText(targetEl.innerHTML);
+              setContent(bId, { ...block.content, [fieldKey]: updatedText });
+              setEqualizerMessage(`✓ Formatage ${formatType} synchronisé en direct`);
+              return;
+            }
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    // 2. Fallback de remplacement textuel par jetons Markdown
+    if (!bId) return;
+    const block = blocks.find((b) => b.id === bId);
+    if (!block) return;
+
+    let fieldKey = "content";
+    if (block.type === "quote" && cstr(block.content, "quote")) fieldKey = "quote";
+    else if (block.type === "heading") fieldKey = "content";
+
+    const currentText = cstr(block.content, fieldKey);
+    const selected = (floatingToolbar.selectedText || "").trim();
+
+    if (selected && currentText.includes(selected)) {
+      let wrapped = "";
+      if (formatType === "bold") {
+        wrapped = selected.startsWith("**") && selected.endsWith("**") ? selected.slice(2, -2) : `**${selected}**`;
+      } else if (formatType === "italic") {
+        wrapped = selected.startsWith("*") && selected.endsWith("*") ? selected.slice(1, -1) : `*${selected}*`;
+      } else if (formatType === "underline") {
+        wrapped = selected.startsWith("<u>") && selected.endsWith("</u>") ? selected.slice(3, -4) : `<u>${selected}</u>`;
+      } else if (formatType === "code") {
+        wrapped = selected.startsWith("`") && selected.endsWith("`") ? selected.slice(1, -1) : `\`${selected}\``;
+      } else if (formatType === "highlight") {
+        wrapped = selected.startsWith("==") && selected.endsWith("==") ? selected.slice(2, -2) : `==${selected}==`;
+      }
+
+      const newText = currentText.replace(selected, wrapped);
+      setContent(bId, { ...block.content, [fieldKey]: newText });
+      setFloatingToolbar((prev) => ({ ...prev, selectedText: wrapped }));
+      setEqualizerMessage(`✓ Formatage ${formatType} synchronisé sur le bloc #${bId}`);
+    } else {
+      if (!currentText) return;
+      let wrapped = "";
+      if (formatType === "bold") {
+        wrapped = currentText.startsWith("**") && currentText.endsWith("**") ? currentText.slice(2, -2) : `**${currentText}**`;
+      } else if (formatType === "italic") {
+        wrapped = currentText.startsWith("*") && currentText.endsWith("*") ? currentText.slice(1, -1) : `*${currentText}*`;
+      } else if (formatType === "underline") {
+        wrapped = currentText.startsWith("<u>") && currentText.endsWith("</u>") ? currentText.slice(3, -4) : `<u>${currentText}</u>`;
+      } else if (formatType === "code") {
+        wrapped = currentText.startsWith("`") && currentText.endsWith("`") ? currentText.slice(1, -1) : `\`${currentText}\``;
+      } else if (formatType === "highlight") {
+        wrapped = currentText.startsWith("==") && currentText.endsWith("==") ? currentText.slice(2, -2) : `==${currentText}==`;
+      }
+      setContent(bId, { ...block.content, [fieldKey]: wrapped });
+      setEqualizerMessage(`✓ Formatage ${formatType} appliqué à tout le bloc #${bId}`);
+    }
+  }
+
+  // Rendu enveloppant pour chaque bloc en mode Word avec barre d'outils de modulation rapide
+  function renderModulatedBlock(block: EditorBlock, bIdx: number, children: React.ReactNode) {
+    return (
+      <div
+        key={block.id}
+        id={`block-${block.id}`}
+        className="group/block relative transition-all rounded-xl p-1 -m-1 hover:ring-1 hover:ring-primary/20"
+      >
+        {isWordPageMode && (
+          <div className="absolute right-2 -top-3 z-30 opacity-0 group-hover/block:opacity-100 focus-within:opacity-100 transition-opacity bg-white/95 dark:bg-navy/95 backdrop-blur-md border border-gray-200 dark:border-white/15 rounded-lg shadow-md px-1.5 py-0.5 flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 select-none pointer-events-auto">
+            <span className="text-[10px] font-mono text-gray-400 px-1">
+              #{bIdx + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => move(block.id, "up")}
+              disabled={bIdx === 0}
+              title="Monter le bloc"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded disabled:opacity-30 cursor-pointer"
+            >
+              <ArrowUp className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => move(block.id, "down")}
+              disabled={bIdx === blocks.length - 1}
+              title="Descendre le bloc"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded disabled:opacity-30 cursor-pointer"
+            >
+              <ArrowDown className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => duplicateBlock(block.id)}
+              title="Dupliquer ce bloc"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded cursor-pointer"
+            >
+              <Copy className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => addBlock("text", block.id)}
+              title="Ajouter un paragraphe en dessous"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded cursor-pointer text-primary"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+            <select
+              value={block.type === "heading" ? (cstr(block.content, "level") === "h3" ? "heading-h3" : "heading") : block.type}
+              onChange={(e) => convertBlockType(block.id, e.target.value)}
+              className="text-[10px] font-semibold bg-transparent border-0 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-primary focus:outline-none"
+              title="Convertir le type de bloc"
+            >
+              <option value="text">Texte</option>
+              <option value="heading">Titre H2</option>
+              <option value="heading-h3">Sous-titre H3</option>
+              <option value="callout">Astuce</option>
+              <option value="quote">Citation</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => removeBlock(block.id)}
+              title="Supprimer ce bloc"
+              className="p-1 hover:bg-danger/10 hover:text-danger rounded cursor-pointer text-gray-400"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
+    );
+  }
+
   // Auteurs configurés pour les flancs latéraux extérieurs (gauche / droit) ou dans le cours
   const leftAuthorBlocks = blocks.filter(
     (b) => b.type === "author" && cstr(b.content, "layout") === "sidebar-left"
@@ -817,11 +1650,21 @@ function CourseEditor() {
   const [previewFlippedCards, setPreviewFlippedCards] = useState<Record<number, boolean>>({});
   const [copiedCodeId, setCopiedCodeId] = useState<number | null>(null);
 
-  function addBlock(type: string, afterId?: number | null) {
-    const def = ALL_BLOCK_TYPES.find((b) => b.type === type);
-    const initialContent = def ? def.defaultContent() : { content: "" };
+  function addBlock(type: string, afterId?: number | null, customContent?: Record<string, unknown>) {
+    pushHistoryState(`Ajout du bloc ${type}`);
+    let actualType = type;
+    let initialContent: Record<string, unknown>;
+
+    if (type === "heading-h3") {
+      actualType = "heading";
+      initialContent = customContent || { content: "Sous-titre H3", level: "h3" };
+    } else {
+      const def = ALL_BLOCK_TYPES.find((b) => b.type === type);
+      initialContent = customContent || (def ? def.defaultContent() : { content: "" });
+    }
+
     const newId = Date.now();
-    const newBlock: EditorBlock = { id: newId, type, content: initialContent };
+    const newBlock: EditorBlock = { id: newId, type: actualType, content: initialContent };
 
     setBlocks((prev) => {
       const targetId = afterId ?? selectedBlockId;
@@ -838,6 +1681,7 @@ function CourseEditor() {
   }
 
   function removeBlock(id: number) {
+    pushHistoryState("Suppression de bloc");
     setBlocks((b) => b.filter((bl) => bl.id !== id));
     if (selectedBlockId === id) setSelectedBlockId(null);
   }
@@ -845,6 +1689,7 @@ function CourseEditor() {
   function duplicateBlock(id: number) {
     const target = blocks.find((b) => b.id === id);
     if (!target) return;
+    pushHistoryState("Duplication de bloc");
     const clonedId = Date.now();
     const cloned = { ...target, id: clonedId, content: JSON.parse(JSON.stringify(target.content)) };
     setBlocks((b) => {
@@ -901,6 +1746,60 @@ function CourseEditor() {
     });
 
     // Recherche dans les actions rapides
+    if ("annuler".includes(q) || "undo".includes(q) || "revenir".includes(q)) {
+      matches.push({
+        id: "act-undo",
+        label: "Annuler la dernière action",
+        desc: "Rétablir l'état antérieur du cours (Ctrl + Z)",
+        icon: Undo,
+        action: () => { handleUndo(); setRibbonSearch(""); },
+      });
+    }
+    if ("retablir".includes(q) || "redo".includes(q) || "avancer".includes(q)) {
+      matches.push({
+        id: "act-redo",
+        label: "Rétablir l'action",
+        desc: "Réappliquer la dernière action annulée (Ctrl + Y)",
+        icon: Redo,
+        action: () => { handleRedo(); setRibbonSearch(""); },
+      });
+    }
+    if ("exporter".includes(q) || "sauvegarde".includes(q) || "json".includes(q) || "telecharger".includes(q)) {
+      matches.push({
+        id: "act-export-json",
+        label: "Exporter en JSON",
+        desc: "Télécharger la structure du cours en fichier .json",
+        icon: FileDown,
+        action: () => { exportCourseJson(); setRibbonSearch(""); },
+      });
+    }
+    if ("importer".includes(q) || "charger".includes(q) || "ouvrir".includes(q)) {
+      matches.push({
+        id: "act-import-json",
+        label: "Importer un cours (JSON)",
+        desc: "Charger un cours depuis un fichier .json",
+        icon: FileUp,
+        action: () => { triggerImportCourseJson(); setRibbonSearch(""); },
+      });
+    }
+    if ("imprimer".includes(q) || "pdf".includes(q) || "print".includes(q)) {
+      matches.push({
+        id: "act-print",
+        label: "Imprimer / Exporter PDF",
+        desc: "Générer la version imprimable ou PDF (Ctrl + P)",
+        icon: Printer,
+        action: () => { window.print(); setRibbonSearch(""); },
+      });
+    }
+    if ("nouveau".includes(q) || "reinitialiser".includes(q) || "reset".includes(q)) {
+      matches.push({
+        id: "act-reset",
+        label: "Nouveau cours",
+        desc: "Réinitialiser l'éditeur avec un nouveau chapitre",
+        icon: Plus,
+        action: () => { resetEditor(); setRibbonSearch(""); },
+      });
+    }
     if ("dupliquer".includes(q) || "copier".includes(q)) {
       matches.push({
         id: "act-dup",
@@ -1003,16 +1902,63 @@ function CourseEditor() {
         action: () => { setTocPlacement("none"); setRibbonSearch(""); },
       });
     }
+    if ("egaliser".includes(q) || "egaliseur".includes(q) || "harmoniser".includes(q) || "police".includes(q) || "saut".includes(q) || "titre".includes(q)) {
+      matches.push({
+        id: "equalize-typo",
+        label: "Égaliser la police",
+        desc: `Harmoniser la typographie (${activeFontConfig.label}) sur tout le cours`,
+        icon: IconType,
+        action: () => { equalizeTypography(); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "equalize-spacing",
+        label: "Égaliser les espacements",
+        desc: "Nettoyer les sauts de ligne triples et espaces superflus",
+        icon: IconAlignLeft,
+        action: () => { equalizeSpacing(); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "equalize-headings",
+        label: "Égaliser les titres",
+        desc: "Numéroter automatiquement les sections (1., 2., 2.1...)",
+        icon: IconHeading,
+        action: () => { equalizeHeadings(); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "equalize-markup",
+        label: "Nettoyer le balisage",
+        desc: "Purger les balises orphelines ou incomplètes",
+        icon: IconWand,
+        action: () => { equalizeMarkup(); setRibbonSearch(""); },
+      });
+      matches.push({
+        id: "open-equalizer-tab",
+        label: "Ouvrir l'Égaliseur Word",
+        desc: "Afficher l'onglet complet Égaliseur & Interprétation dans le ruban",
+        icon: IconWand,
+        action: () => { setActiveRibbonTab("equalizer"); if (ribbonCollapsed) setRibbonCollapsed(false); setRibbonSearch(""); },
+      });
+    }
 
     return matches;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ribbonSearch, blocks, selectedBlockId, showFeedBorders, tocPlacement]);
+  }, [ribbonSearch, blocks, selectedBlockId, showFeedBorders, tocPlacement, courseFont, ribbonCollapsed]);
 
   function setContent(id: number, content: Record<string, unknown>) {
+    if (!isUndoRedoActionRef.current && !isTypingRef.current) {
+      pushHistoryState("Modification de contenu");
+      isTypingRef.current = true;
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 800);
+
     setBlocks((b) => b.map((bl) => (bl.id === id ? { ...bl, content } : bl)));
   }
 
   function move(id: number, dir: "up" | "down") {
+    pushHistoryState(`Déplacement de bloc ${dir}`);
     setBlocks((b) => {
       const i = b.findIndex((bl) => bl.id === id);
       if (dir === "up" && i === 0) return b;
@@ -1188,6 +2134,81 @@ function CourseEditor() {
     setCopiedCodeId(blockId);
     setTimeout(() => setCopiedCodeId(null), 2000);
   }
+
+  // ─── Raccourcis clavier globaux Word / Office ───
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      const target = e.target as HTMLElement | null;
+      const isNativeInput = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+
+      // Sauvegarde & Publication : Ctrl+S / Cmd+S
+      if (isCtrlOrMeta && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        publish();
+        return;
+      }
+
+      // Réduire / Déplier le ruban : Ctrl+F1
+      if (isCtrlOrMeta && e.key === "F1") {
+        e.preventDefault();
+        setRibbonCollapsed((prev) => !prev);
+        return;
+      }
+
+      // Annuler : Ctrl+Z / Cmd+Z (sans Maj)
+      if (isCtrlOrMeta && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        if (!isNativeInput) {
+          e.preventDefault();
+          handleUndo();
+          return;
+        }
+      }
+
+      // Rétablir : Ctrl+Y / Cmd+Y OU Ctrl+Shift+Z / Cmd+Shift+Z
+      if (
+        (isCtrlOrMeta && (e.key === "y" || e.key === "Y")) ||
+        (isCtrlOrMeta && e.shiftKey && (e.key === "z" || e.key === "Z"))
+      ) {
+        if (!isNativeInput) {
+          e.preventDefault();
+          handleRedo();
+          return;
+        }
+      }
+
+      // Raccourcis de composition de blocs si on n'est pas dans un champ de texte
+      if (!isNativeInput && !target?.isContentEditable) {
+        if (e.altKey && e.key === "1") {
+          e.preventDefault();
+          addBlock("heading");
+        } else if (e.altKey && e.key === "2") {
+          e.preventDefault();
+          addBlock("text");
+        } else if (e.altKey && (e.key === "c" || e.key === "C")) {
+          e.preventDefault();
+          addBlock("code");
+        } else if (e.altKey && (e.key === "q" || e.key === "Q")) {
+          e.preventDefault();
+          addBlock("quiz");
+        } else if (e.altKey && (e.key === "b" || e.key === "B")) {
+          e.preventDefault();
+          setShowFeedBorders((prev) => !prev);
+        } else if (e.altKey && (e.key === "o" || e.key === "O")) {
+          e.preventDefault();
+          setTocPlacement((curr) => (curr === "none" ? "left" : "none"));
+        } else if (isCtrlOrMeta && (e.key === "d" || e.key === "D")) {
+          e.preventDefault();
+          duplicateSelected();
+        } else if (e.key === "Delete" && selectedBlockId) {
+          removeSelected();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo, handleRedo, publish, addBlock, duplicateSelected, removeSelected, selectedBlockId]);
 
   function renderTableOfContents() {
     if (tocItems.length === 0) return null;
@@ -1458,19 +2479,19 @@ function CourseEditor() {
                     className="fixed inset-0 z-40"
                     onClick={() => setFileMenuOpen(false)}
                   />
-                  <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-xl shadow-xl z-50 p-1.5 space-y-1">
+                  <div className="absolute left-0 top-full mt-1.5 w-64 bg-white dark:bg-navy border border-gray-200 dark:border-white/10 rounded-xl shadow-xl z-50 p-1.5 space-y-1">
                     <button
                       type="button"
                       onClick={() => {
                         publish();
                         setFileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      <Save className="w-4 h-4 text-[#0B2F5E] dark:text-blue-400" />
+                      <Save className="w-4 h-4 text-[#0B2F5E] dark:text-blue-400 shrink-0" />
                       <div className="flex-1">
                         <p className="font-bold">Sauvegarder & Publier</p>
-                        <p className="text-[10px] text-gray-400">Enregistrer dans la base</p>
+                        <p className="text-[10px] text-gray-400">Enregistrer dans la base (Ctrl+S)</p>
                       </div>
                     </button>
                     <button
@@ -1479,24 +2500,71 @@ function CourseEditor() {
                         setViewMode("preview");
                         setFileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div className="flex-1">
                         <p className="font-bold">Aperçu Étudiant</p>
                         <p className="text-[10px] text-gray-400">Rendu final du cours</p>
                       </div>
                     </button>
+
+                    <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
+
                     <button
                       type="button"
                       onClick={() => {
-                        setTitle("");
-                        setBlocks([{ id: Date.now(), type: "heading", content: { content: "1. Nouveau chapitre", level: "h2" } }]);
+                        exportCourseJson();
                         setFileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      <Plus className="w-4 h-4 text-primary" />
+                      <FileDown className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-bold">Exporter en JSON</p>
+                        <p className="text-[10px] text-gray-400">Télécharger la structure du cours</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerImportCourseJson();
+                        setFileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <FileUp className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-bold">Importer un cours (JSON)</p>
+                        <p className="text-[10px] text-gray-400">Charger depuis un fichier .json</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.print();
+                        setFileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <Printer className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-bold">Imprimer / PDF</p>
+                        <p className="text-[10px] text-gray-400">Export papier ou PDF (Ctrl+P)</p>
+                      </div>
+                    </button>
+
+                    <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetEditor();
+                        setFileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-semibold text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 text-danger shrink-0" />
                       <div className="flex-1">
                         <p className="font-bold">Nouveau cours</p>
                         <p className="text-[10px] text-gray-400">Réinitialiser l'éditeur</p>
@@ -1505,6 +2573,14 @@ function CourseEditor() {
                   </div>
                 </>
               )}
+              {/* Input fichier caché pour l'import de cours JSON */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImportJsonFile}
+                accept=".json"
+                className="hidden"
+              />
             </div>
 
             {/* Icônes de la barre d'accès rapide */}
@@ -1518,17 +2594,27 @@ function CourseEditor() {
             </button>
             <button
               type="button"
-              onClick={() => {}}
-              title="Annuler (Ctrl + Z)"
-              className="p-1.5 rounded-md hover:bg-gray-200/60 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer opacity-60 hover:opacity-100"
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              title={undoStack.length > 0 ? "Annuler la dernière action (Ctrl + Z)" : "Rien à annuler (Ctrl + Z)"}
+              className={`p-1.5 rounded-md transition-colors ${
+                undoStack.length > 0
+                  ? "hover:bg-gray-200/60 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 cursor-pointer opacity-100"
+                  : "text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed"
+              }`}
             >
               <Undo className="w-4 h-4" />
             </button>
             <button
               type="button"
-              onClick={() => {}}
-              title="Rétablir (Ctrl + Y)"
-              className="p-1.5 rounded-md hover:bg-gray-200/60 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer opacity-60 hover:opacity-100"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              title={redoStack.length > 0 ? "Rétablir l'action (Ctrl + Y / Ctrl + Maj + Z)" : "Rien à rétablir (Ctrl + Y)"}
+              className={`p-1.5 rounded-md transition-colors ${
+                redoStack.length > 0
+                  ? "hover:bg-gray-200/60 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 cursor-pointer opacity-100"
+                  : "text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed"
+              }`}
             >
               <Redo className="w-4 h-4" />
             </button>
@@ -1713,6 +2799,24 @@ function CourseEditor() {
               </button>
             </div>
 
+            {/* Bouton d'accès direct Égaliseur Word dans le Dock */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveRibbonTab("equalizer");
+                if (ribbonCollapsed) setRibbonCollapsed(false);
+              }}
+              title="Ouvrir l'Espace d'Interprétation & Égaliseur Word dans le ruban"
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                activeRibbonTab === "equalizer" && !ribbonCollapsed
+                  ? "bg-[#0B2F5E] text-white border-[#0B2F5E] shadow-2xs"
+                  : "bg-white dark:bg-navy text-[#0B2F5E] dark:text-blue-300 border-gray-200 dark:border-white/10 hover:border-primary/40 hover:bg-gray-50 dark:hover:bg-white/5"
+              }`}
+            >
+              <IconWand className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline font-bold">Égaliseur</span>
+            </button>
+
             <button
               type="button"
               onClick={publish}
@@ -1744,7 +2848,24 @@ function CourseEditor() {
           </div>
         </div>
 
-        {/* LIGNE DES ONGLETS WORD (ACCUEIL, INSERTION, ÉVALUATION, SYNTHÈSE, AFFICHAGE) */}
+        {/* Notification d'égalisation intégrée au Dock */}
+        {equalizerMessage && (
+          <div className="mx-3 mt-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center gap-2">
+              <IconCheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{equalizerMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEqualizerMessage(null)}
+              className="text-emerald-700 hover:text-emerald-900 dark:hover:text-white p-0.5"
+            >
+              <IconX className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
+        {/* LIGNE DES ONGLETS WORD (ACCUEIL, INSERTION, ÉVALUATION, SYNTHÈSE, ÉGALISEUR, AFFICHAGE) */}
         <div className="flex items-center gap-1 px-3 pt-1 border-b border-gray-200 dark:border-white/10 bg-gray-100/60 dark:bg-white/5 overflow-x-auto scrollbar-none select-none">
           {RIBBON_TABS.map((tab) => {
             const isActive = activeRibbonTab === tab.key;
@@ -1815,6 +2936,110 @@ function CourseEditor() {
                   />
                 </RibbonGroup>
 
+                {/* Groupe Police & Typographie (Style Microsoft Word) */}
+                <RibbonGroup label="Police">
+                  <div className="flex flex-col justify-center gap-1.5 min-w-[210px]">
+                    {/* Ligne 1 : Sélecteur de Police & Sélecteur de Taille */}
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={courseFont}
+                        onChange={(e) => setCourseFont(e.target.value as FontFamilyKey)}
+                        className="text-xs font-medium px-2 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-100 hover:border-gray-300 dark:hover:border-white/20 focus:outline-none focus:ring-1 focus:ring-primary h-7 flex-1 min-w-[125px] cursor-pointer"
+                        title="Police de texte du cours"
+                      >
+                        {FONT_FAMILIES.map((f) => (
+                          <option key={f.key} value={f.key}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={courseFontSize}
+                        onChange={(e) => setCourseFontSize(Number(e.target.value))}
+                        className="text-xs font-semibold px-1 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-100 hover:border-gray-300 dark:hover:border-white/20 focus:outline-none focus:ring-1 focus:ring-primary h-7 w-14 text-center shrink-0 cursor-pointer"
+                        title="Taille de police (px)"
+                      >
+                        {FONT_SIZES.map((sz) => (
+                          <option key={sz} value={sz}>
+                            {sz}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setCourseFontSize((prev) => Math.min(28, prev + 1))}
+                        title="Agrandir la taille de police (A+)"
+                        className="p-1 h-7 w-7 rounded-md border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors"
+                      >
+                        <span className="text-[11px] font-extrabold flex items-center">A<span className="text-[9px] font-black leading-none text-primary dark:text-blue-400">▲</span></span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setCourseFontSize((prev) => Math.max(12, prev - 1))}
+                        title="Réduire la taille de police (A-)"
+                        className="p-1 h-7 w-7 rounded-md border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors"
+                      >
+                        <span className="text-[11px] font-extrabold flex items-center">A<span className="text-[9px] font-black leading-none text-gray-500">▼</span></span>
+                      </button>
+                    </div>
+
+                    {/* Ligne 2 : Boutons rapides Gras, Italique, Souligné, Code, Surlignage */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting("bold")}
+                        title="Mettre en gras (Ctrl + B / **texte**)"
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer w-6 h-6 flex items-center justify-center hover:text-primary"
+                      >
+                        <IconBold className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting("italic")}
+                        title="Mettre en italique (Ctrl + I / *texte*)"
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer w-6 h-6 flex items-center justify-center hover:text-primary"
+                      >
+                        <IconItalic className="w-3.5 h-3.5" strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting("underline")}
+                        title="Souligner (Ctrl + U / <u>texte</u>)"
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer w-6 h-6 flex items-center justify-center hover:text-primary"
+                      >
+                        <IconUnderline className="w-3.5 h-3.5" strokeWidth={2} />
+                      </button>
+                      <div className="w-[1px] h-3.5 bg-gray-200 dark:bg-white/10 mx-0.5" />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting("code")}
+                        title="Code inline (`code`)"
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer w-6 h-6 flex items-center justify-center hover:text-primary"
+                      >
+                        <IconCode2 className="w-3.5 h-3.5" strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyFormatting("highlight")}
+                        title="Surligner en jaune (==texte==)"
+                        className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer w-6 h-6 flex items-center justify-center hover:text-amber-500"
+                      >
+                        <IconHighlighter className="w-3.5 h-3.5" strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
+                </RibbonGroup>
+
                 {/* Groupe Blocs de texte */}
                 <RibbonGroup label="Blocs de texte">
                   <RibbonLargeButton
@@ -1878,11 +3103,39 @@ function CourseEditor() {
                       icon={IconHeading}
                       iconColor="text-blue-600 dark:text-blue-400"
                       label="Sous-titre H3"
-                      onClick={() => {
-                        const newId = Date.now();
-                        setBlocks((prev) => [...prev, { id: newId, type: "heading", content: { content: "Sous-titre H3", level: "h3" } }]);
-                        setSelectedBlockId(newId);
-                      }}
+                      onClick={() => addBlock("heading-h3")}
+                    />
+                  </div>
+                </RibbonGroup>
+
+                {/* Groupe Égaliseur rapide */}
+                <RibbonGroup label="Égaliseur">
+                  <div className="flex flex-col justify-center gap-1">
+                    <RibbonSmallButton
+                      icon={IconType}
+                      iconColor="text-primary dark:text-blue-400"
+                      label="Égaliser police"
+                      onClick={() => equalizeTypography()}
+                    />
+                    <RibbonSmallButton
+                      icon={IconAlignLeft}
+                      iconColor="text-emerald-600 dark:text-emerald-400"
+                      label="Égaliser sauts"
+                      onClick={equalizeSpacing}
+                    />
+                  </div>
+                  <div className="flex flex-col justify-center gap-1">
+                    <RibbonSmallButton
+                      icon={IconHeading}
+                      iconColor="text-indigo-600 dark:text-indigo-400"
+                      label="Numéroter titres"
+                      onClick={equalizeHeadings}
+                    />
+                    <RibbonSmallButton
+                      icon={IconWand}
+                      iconColor="text-amber-600 dark:text-amber-400"
+                      label="Nettoyer balises"
+                      onClick={equalizeMarkup}
                     />
                   </div>
                 </RibbonGroup>
@@ -2069,7 +3322,191 @@ function CourseEditor() {
               </>
             )}
 
-            {/* ── ONGLET 5 : AFFICHAGE ── */}
+            {/* ── ONGLET 5 : ÉGALISEUR & INTERPRÉTATION DANS LE DOCK ── */}
+            {activeRibbonTab === "equalizer" && (
+              <>
+                {/* Groupe 1 : Égaliseurs en 1 clic */}
+                <RibbonGroup label="Égaliseurs en 1 clic">
+                  <RibbonLargeButton
+                    icon={IconType}
+                    iconColor="text-primary dark:text-blue-400"
+                    label="Égaliser police"
+                    shortcut="Tout le cours"
+                    onClick={() => equalizeTypography()}
+                  />
+                  <RibbonLargeButton
+                    icon={IconAlignLeft}
+                    iconColor="text-emerald-600 dark:text-emerald-400"
+                    label="Égaliser sauts"
+                    shortcut="Harmoniser"
+                    onClick={equalizeSpacing}
+                  />
+                  <div className="flex flex-col justify-center gap-1">
+                    <RibbonSmallButton
+                      icon={IconHeading}
+                      iconColor="text-indigo-600 dark:text-indigo-400"
+                      label="Numéroter les titres"
+                      onClick={equalizeHeadings}
+                    />
+                    <RibbonSmallButton
+                      icon={IconWand}
+                      iconColor="text-amber-600 dark:text-amber-400"
+                      label="Purger balises orphelines"
+                      onClick={equalizeMarkup}
+                    />
+                  </div>
+                </RibbonGroup>
+
+                {/* Groupe 2 : Interprétation & Conversion du bloc actif */}
+                <RibbonGroup label="Bloc Actif">
+                  <div className="flex flex-col justify-center gap-1 min-w-[220px] px-1">
+                    <div className="flex items-center justify-between text-[11px] font-semibold">
+                      <span className="text-gray-700 dark:text-gray-300 font-bold">
+                        {activeBlockForInspection
+                          ? `Bloc #${blocks.findIndex((b) => b.id === activeBlockForInspection.id) + 1} (${activeBlockForInspection.type})`
+                          : "Sélectionnez un bloc"}
+                      </span>
+                      {activeBlockForInspection && (
+                        <button
+                          type="button"
+                          onClick={() => setShowRawInspector((v) => !v)}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                            showRawInspector
+                              ? "bg-[#0B2F5E] text-white"
+                              : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200"
+                          }`}
+                        >
+                          {showRawInspector ? "Masquer code" : "Inspecter code"}
+                        </button>
+                      )}
+                    </div>
+                    {activeBlockForInspection ? (
+                      <div className="flex items-center gap-1 pt-0.5">
+                        <span className="text-[10px] text-gray-400 font-semibold mr-0.5">Convertir :</span>
+                        <button
+                          type="button"
+                          onClick={() => convertBlockType(activeBlockForInspection.id, "heading")}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                          title="Convertir en Titre H2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => convertBlockType(activeBlockForInspection.id, "heading-h3")}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                          title="Convertir en Sous-titre H3"
+                        >
+                          H3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => convertBlockType(activeBlockForInspection.id, "text")}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                          title="Convertir en Texte Markdown"
+                        >
+                          Texte
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => convertBlockType(activeBlockForInspection.id, "callout")}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                          title="Convertir en Encadré Astuce"
+                        >
+                          Astuce
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => convertBlockType(activeBlockForInspection.id, "quote")}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                          title="Convertir en Citation"
+                        >
+                          Citation
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 italic">Cliquez sur un bloc pour l'interpréter</p>
+                    )}
+                  </div>
+                </RibbonGroup>
+
+                {/* Groupe 3 : Typographie Word */}
+                <RibbonGroup label="Police & Taille">
+                  <div className="flex flex-col justify-center gap-1.5 min-w-[200px]">
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={courseFont}
+                        onChange={(e) => setCourseFont(e.target.value as FontFamilyKey)}
+                        className="text-xs font-medium px-2 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-100 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary h-7 flex-1 cursor-pointer"
+                        title="Police globale du cours"
+                      >
+                        {FONT_FAMILIES.map((f) => (
+                          <option key={f.key} value={f.key}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={courseFontSize}
+                        onChange={(e) => setCourseFontSize(Number(e.target.value))}
+                        className="text-xs font-semibold px-1 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-100 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary h-7 w-14 text-center shrink-0 cursor-pointer"
+                        title="Taille de police (px)"
+                      >
+                        {FONT_SIZES.map((sz) => (
+                          <option key={sz} value={sz}>
+                            {sz}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setCourseFontSize((prev) => Math.min(28, prev + 1))}
+                        className="flex-1 py-1 px-2 rounded bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-xs font-bold text-gray-700 dark:text-gray-200 transition-colors cursor-pointer text-center"
+                      >
+                        A+ Agrandir
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setCourseFontSize((prev) => Math.max(12, prev - 1))}
+                        className="flex-1 py-1 px-2 rounded bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-xs font-bold text-gray-700 dark:text-gray-200 transition-colors cursor-pointer text-center"
+                      >
+                        A- Réduire
+                      </button>
+                    </div>
+                  </div>
+                </RibbonGroup>
+
+                {/* Groupe 4 : Mode Document Word & Métriques */}
+                <RibbonGroup label="Mode Word">
+                  <RibbonLargeButton
+                    icon={IconFileText}
+                    iconColor={isWordPageMode ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}
+                    label={isWordPageMode ? "Word Actif" : "Word Inactif"}
+                    shortcut="Frappe directe"
+                    isActive={isWordPageMode}
+                    onClick={() => setIsWordPageMode((v) => !v)}
+                  />
+                  <div className="flex flex-col justify-center gap-1 px-1.5 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[#0B2F5E] dark:text-blue-400 font-bold">{courseStats.words}</span>
+                      <span>mots</span>
+                      <span>•</span>
+                      <span className="font-bold">{blocks.length}</span>
+                      <span>blocs</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400">
+                      Temps de lecture : ~{courseStats.readingTime} min
+                    </div>
+                  </div>
+                </RibbonGroup>
+              </>
+            )}
+
+            {/* ── ONGLET 6 : AFFICHAGE ── */}
             {activeRibbonTab === "view" && (
               <>
                 {/* Groupe Mode de vue */}
@@ -2187,6 +3624,28 @@ function CourseEditor() {
 
           </div>
         )}
+
+        {/* Tiroir d'inspection du balisage brut du bloc actif dans le dock */}
+        {showRawInspector && activeBlockForInspection && (
+          <div className="border-t border-gray-200 dark:border-white/10 bg-gray-900 p-3 text-xs text-gray-200 space-y-2 animate-in fade-in duration-150 rounded-b-xl">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-400 flex items-center gap-1.5 font-mono">
+                <IconCode2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Balisage structuré du bloc #{activeBlockForInspection.id} ({activeBlockForInspection.type})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRawInspector(false)}
+                className="text-gray-400 hover:text-white text-[11px] font-semibold cursor-pointer p-0.5"
+              >
+                Fermer ✕
+              </button>
+            </div>
+            <pre className="font-mono text-[11px] p-2 bg-gray-950 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-40 leading-relaxed text-emerald-400 border border-gray-800">
+              {JSON.stringify(activeBlockForInspection.content, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
 
       {/* Titre & métadonnées du cours */}
@@ -2201,7 +3660,7 @@ function CourseEditor() {
           </label>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Ex : Apprentissage Profond & Réseaux de Neurones..."
             className="w-full text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white bg-transparent border-b-2 border-gray-200/80 dark:border-white/10 focus:border-[#0B2F5E] focus:outline-none py-1.5 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-600"
           />
@@ -3390,11 +4849,36 @@ function CourseEditor() {
           )}
 
           {/* CORPS PRINCIPAL DU COURS : PLEINE LARGEUR DU DOCK */}
-          <div className={`w-full bg-white dark:bg-navy rounded-2xl p-6 sm:p-12 space-y-8 transition-all ${
-            showFeedBorders
-              ? "border border-gray-100 dark:border-white/5 shadow-sm"
-              : "border-0 shadow-none"
-          }`}>
+          <div
+            className={`w-full bg-white dark:bg-navy rounded-2xl p-6 sm:p-12 space-y-8 transition-all ${
+              showFeedBorders
+                ? "border border-gray-100 dark:border-white/5 shadow-sm"
+                : "border-0 shadow-none"
+            }`}
+            onMouseUp={handlePreviewMouseUp}
+            style={{
+              fontFamily: activeFontConfig.fontStyle,
+              fontSize: `${courseFontSize}px`,
+            }}
+          >
+
+            {/* Notification temporaire d'égalisation */}
+            {equalizerMessage && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-2">
+                  <IconCheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{equalizerMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEqualizerMessage(null)}
+                  className="text-emerald-700 hover:text-emerald-900 p-0.5"
+                >
+                  <IconX className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
             {/* En-tête cours */}
             <div className={`pb-6 ${showFeedBorders ? "border-b border-gray-100 dark:border-white/10" : ""}`}>
               <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -3408,9 +4892,14 @@ function CourseEditor() {
                   Niveau : {level}
                 </span>
               </div>
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                {title || "Sans titre"}
-              </h1>
+              <WordEditableText
+                value={title}
+                onChange={handleTitleChange}
+                as="h1"
+                className="text-3xl font-extrabold text-gray-900 dark:text-white"
+                placeholder="Titre du cours..."
+                isWordMode={isWordPageMode}
+              />
             </div>
 
             {/* Sommaire & Fiche Auteur(s) responsive sur écrans compacts (< 1540px) */}
@@ -3423,7 +4912,7 @@ function CourseEditor() {
 
             {/* Rendu des blocs pédagogiques du cours */}
             <div className="w-full space-y-6 flow-root">
-              {blocks.map((block) => {
+              {blocks.map((block, bIdx) => {
                 // Si l'auteur est positionné sur un flanc extérieur, il est déjà affiché dans l'aside sticky extérieur
                 if (block.type === "author") {
                   const layout = cstr(block.content, "layout") || "sidebar-right";
@@ -3441,17 +4930,45 @@ function CourseEditor() {
                 // 1. Heading
               if (block.type === "heading") {
                 const lvl = cstr(block.content, "level");
-                if (lvl === "h1") return <h1 key={block.id} id={`block-${block.id}`} className="text-3xl font-extrabold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48">{cstr(block.content, "content")}</h1>;
-                if (lvl === "h3") return <h3 key={block.id} id={`block-${block.id}`} className="text-lg font-bold text-gray-900 dark:text-white pt-2 scroll-mt-48">{cstr(block.content, "content")}</h3>;
-                return <h2 key={block.id} id={`block-${block.id}`} className="text-2xl font-bold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48">{cstr(block.content, "content")}</h2>;
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <WordEditableText
+                    value={cstr(block.content, "content")}
+                    onChange={(val) => setContent(block.id, { ...block.content, content: val })}
+                    as={lvl === "h1" ? "h1" : lvl === "h3" ? "h3" : "h2"}
+                    blockId={block.id}
+                    onFocus={() => setSelectedBlockId(block.id)}
+                    onContextMenu={(e) => handlePreviewContextMenu(e, block.id)}
+                    className={
+                      lvl === "h1"
+                        ? "text-3xl font-extrabold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48 select-text"
+                        : lvl === "h3"
+                        ? "text-lg font-bold text-gray-900 dark:text-white pt-2 scroll-mt-48 select-text"
+                        : "text-2xl font-bold text-gray-900 dark:text-white pt-4 pb-2 border-b border-gray-100 dark:border-white/10 scroll-mt-48 select-text"
+                    }
+                    isWordMode={isWordPageMode}
+                    placeholder="Titre de section..."
+                  />
+                );
               }
 
               // 2. Text
               if (block.type === "text") {
-                return (
-                  <p key={block.id} className="text-base text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
-                    {cstr(block.content, "content")}
-                  </p>
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <WordEditableText
+                    value={cstr(block.content, "content")}
+                    onChange={(val) => setContent(block.id, { ...block.content, content: val })}
+                    as="div"
+                    blockId={block.id}
+                    onFocus={() => setSelectedBlockId(block.id)}
+                    onContextMenu={(e) => handlePreviewContextMenu(e, block.id)}
+                    className="text-base text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap select-text"
+                    isWordMode={isWordPageMode}
+                    placeholder="Tapez votre paragraphe de cours..."
+                  />
                 );
               }
 
@@ -3463,8 +4980,14 @@ function CourseEditor() {
                   v === "info" ? "border-blue-500 bg-blue-500/10 text-blue-900 dark:text-blue-200" :
                   v === "definition" ? "border-purple-500 bg-purple-500/10 text-purple-900 dark:text-purple-200" :
                   "border-emerald-500 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200";
-                return (
-                  <div key={block.id} className={`border-l-4 p-4 rounded-r-2xl my-4 space-y-1.5 ${style}`}>
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div
+                    data-block-id={block.id}
+                    onContextMenu={(e) => handlePreviewContextMenu(e, block.id)}
+                    className={`border-l-4 p-4 rounded-r-2xl my-4 space-y-1.5 select-text ${style}`}
+                  >
                     <h4 className="text-sm font-bold flex items-center gap-2">
                       {v === "warning" ? (
                         <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" strokeWidth={1.8} />
@@ -3475,29 +4998,77 @@ function CourseEditor() {
                       ) : (
                         <IconLightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.8} />
                       )}
-                      <span>{cstr(block.content, "title")}</span>
+                      <WordEditableText
+                        value={cstr(block.content, "title")}
+                        onChange={(val) => setContent(block.id, { ...block.content, title: val })}
+                        as="span"
+                        blockId={block.id}
+                        onFocus={() => setSelectedBlockId(block.id)}
+                        isWordMode={isWordPageMode}
+                        placeholder="Titre de l'astuce..."
+                      />
                     </h4>
-                    <p className="text-xs leading-relaxed opacity-90">{cstr(block.content, "content")}</p>
+                    <WordEditableText
+                      value={cstr(block.content, "content")}
+                      onChange={(val) => setContent(block.id, { ...block.content, content: val })}
+                      as="div"
+                      blockId={block.id}
+                      onFocus={() => setSelectedBlockId(block.id)}
+                      className="text-xs leading-relaxed opacity-90"
+                      isWordMode={isWordPageMode}
+                      placeholder="Détail du point clé..."
+                    />
                   </div>
                 );
               }
 
               // 4. Quote
               if (block.type === "quote") {
-                return (
-                  <blockquote key={block.id} className="border-l-4 border-primary pl-4 py-2 italic text-gray-700 dark:text-gray-300 my-4 space-y-1">
-                    <p className="text-base">« {cstr(block.content, "quote")} »</p>
-                    <p className="text-xs not-italic text-gray-500 dark:text-gray-400 font-semibold">
-                      — {cstr(block.content, "author")} {cstr(block.content, "source") && <span className="opacity-70 font-normal">({cstr(block.content, "source")})</span>}
-                    </p>
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <blockquote
+                    data-block-id={block.id}
+                    onContextMenu={(e) => handlePreviewContextMenu(e, block.id)}
+                    className="border-l-4 border-primary pl-4 py-2 italic text-gray-700 dark:text-gray-300 my-4 space-y-1 select-text"
+                  >
+                    <div className="text-base flex items-start gap-1">
+                      <span>«</span>
+                      <WordEditableText
+                        value={cstr(block.content, "quote")}
+                        onChange={(val) => setContent(block.id, { ...block.content, quote: val })}
+                        as="span"
+                        blockId={block.id}
+                        onFocus={() => setSelectedBlockId(block.id)}
+                        className="flex-1 not-italic font-serif"
+                        isWordMode={isWordPageMode}
+                        placeholder="Citation inspirante..."
+                      />
+                      <span>»</span>
+                    </div>
+                    <div className="text-xs not-italic text-gray-500 dark:text-gray-400 font-semibold flex items-center gap-1">
+                      <span>—</span>
+                      <WordEditableText
+                        value={cstr(block.content, "author")}
+                        onChange={(val) => setContent(block.id, { ...block.content, author: val })}
+                        as="span"
+                        blockId={block.id}
+                        onFocus={() => setSelectedBlockId(block.id)}
+                        isWordMode={isWordPageMode}
+                        placeholder="Nom de l'auteur..."
+                      />
+                      {cstr(block.content, "source") && <span className="opacity-70 font-normal">({cstr(block.content, "source")})</span>}
+                    </div>
                   </blockquote>
                 );
               }
 
               // 5. Divider
               if (block.type === "divider") {
-                return (
-                  <div key={block.id} id={`block-${block.id}`} className="relative py-4 scroll-mt-48">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div id={`block-${block.id}`} className="relative py-4 scroll-mt-48">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200 dark:border-white/10" /></div>
                     {cstr(block.content, "label") && (
                       <div className="relative flex justify-center"><span className="bg-white dark:bg-navy px-3 text-xs font-semibold text-gray-400">{cstr(block.content, "label")}</span></div>
@@ -3508,8 +5079,10 @@ function CourseEditor() {
 
               // 6. Code
               if (block.type === "code") {
-                return (
-                  <div key={block.id} className="rounded-2xl overflow-hidden border border-gray-800 bg-gray-950 my-4 shadow-sm">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="rounded-2xl overflow-hidden border border-gray-800 bg-gray-950 my-4 shadow-sm">
                     <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800 text-xs text-gray-400">
                       <span className="font-mono font-bold uppercase">{cstr(block.content, "language") || "python"}</span>
                       <button
@@ -3539,8 +5112,10 @@ function CourseEditor() {
 
               // 7. Math
               if (block.type === "math") {
-                return (
-                  <div key={block.id} className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center my-4 space-y-2">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center my-4 space-y-2">
                     <div className="text-base sm:text-lg font-mono text-primary dark:text-white font-bold tracking-wider py-1">
                       {cstr(block.content, "formula")}
                     </div>
@@ -3553,8 +5128,10 @@ function CourseEditor() {
 
               // 8. Table
               if (block.type === "table") {
-                return (
-                  <div key={block.id} className="overflow-x-auto my-4 rounded-xl border border-gray-200 dark:border-white/10">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="overflow-x-auto my-4 rounded-xl border border-gray-200 dark:border-white/10">
                     <table className="w-full text-left text-xs text-gray-700 dark:text-gray-200">
                       <thead className="bg-gray-100 dark:bg-white/10 font-bold text-gray-900 dark:text-white">
                         <tr>
@@ -3579,8 +5156,10 @@ function CourseEditor() {
 
               // 9. Dataset
               if (block.type === "dataset") {
-                return (
-                  <div key={block.id} className="border border-teal-500/20 bg-teal-500/5 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-4">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-teal-500/20 bg-teal-500/5 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2.5">
                         <IconDatabase className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" strokeWidth={1.75} />
@@ -3608,8 +5187,10 @@ function CourseEditor() {
               // 10. Video
               if (block.type === "video") {
                 const vidId = extractYoutubeId(cstr(block.content, "content"));
-                return (
-                  <div key={block.id} className="aspect-video rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 my-4 shadow-sm">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="aspect-video rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 my-4 shadow-sm">
                     <iframe
                       src={`https://www.youtube.com/embed/${vidId}`}
                       className="w-full h-full"
@@ -3622,8 +5203,10 @@ function CourseEditor() {
 
               // 11. Image
               if (block.type === "image") {
-                return (
-                  <div key={block.id} className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 my-4">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 my-4">
                     <img src={cstr(block.content, "content")} alt={cstr(block.content, "alt") || "Illustration"} className="w-full h-auto object-cover max-h-96" />
                     {cstr(block.content, "caption") && (
                       <p className="p-3 text-center text-xs text-gray-500 italic bg-gray-50 dark:bg-white/5">{cstr(block.content, "caption")}</p>
@@ -3634,8 +5217,10 @@ function CourseEditor() {
 
               // 12. Audio
               if (block.type === "audio") {
-                return (
-                  <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 my-4 bg-gray-50 dark:bg-white/5">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-gray-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 my-4 bg-gray-50 dark:bg-white/5">
                     <div className="flex items-center gap-3">
                       <span className="w-10 h-10 rounded-xl bg-violet-500/10 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
                         <IconMic className="w-5 h-5" strokeWidth={1.75} />
@@ -3655,8 +5240,10 @@ function CourseEditor() {
 
               // 13. Embed
               if (block.type === "embed") {
-                return (
-                  <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-5 my-4 bg-gray-50 dark:bg-white/5 flex items-center justify-between">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-gray-200 dark:border-white/10 rounded-2xl p-5 my-4 bg-gray-50 dark:bg-white/5 flex items-center justify-between">
                     <div>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                         <IconExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" strokeWidth={1.75} />
@@ -3677,8 +5264,10 @@ function CourseEditor() {
                 const correctAnswer = cnum(block.content, "answer");
                 const hasAnswered = typeof userSelected === "number";
 
-                return (
-                  <div key={block.id} className="bg-primary/5 dark:bg-white/5 border border-primary/20 rounded-2xl p-6 space-y-4 my-6">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="bg-primary/5 dark:bg-white/5 border border-primary/20 rounded-2xl p-6 space-y-4 my-6">
                     <span className="text-xs font-bold text-primary dark:text-secondary uppercase tracking-wider">
                       Question QCM interactive
                     </span>
@@ -3739,8 +5328,10 @@ function CourseEditor() {
                 const expected = Boolean(block.content.isTrue);
                 const hasAnswered = typeof userChoice === "boolean";
 
-                return (
-                  <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-5 my-4 bg-gray-50 dark:bg-white/5 space-y-3">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-gray-200 dark:border-white/10 rounded-2xl p-5 my-4 bg-gray-50 dark:bg-white/5 space-y-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Test Rapide : Vrai ou Faux ?</span>
                     <p className="text-sm font-bold text-gray-900 dark:text-white">{cstr(block.content, "statement")}</p>
                     <div className="flex items-center gap-3">
@@ -3782,8 +5373,10 @@ function CourseEditor() {
               // 16. Exercice pratique
               if (block.type === "exercise") {
                 const state = previewRevealedExercises[block.id] || { hint: false, solution: false };
-                return (
-                  <div key={block.id} className="border border-purple-500/20 bg-purple-500/5 rounded-2xl p-6 space-y-3 my-6">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-purple-500/20 bg-purple-500/5 rounded-2xl p-6 space-y-3 my-6">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
                         <IconCheckSquare className="w-3.5 h-3.5" strokeWidth={1.8} />
@@ -3840,8 +5433,10 @@ function CourseEditor() {
               // 17. Flashcard
               if (block.type === "flashcard") {
                 const isFlipped = Boolean(previewFlippedCards[block.id]);
-                return (
-                  <div key={block.id} className="max-w-md mx-auto my-6">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="max-w-md mx-auto my-6">
                     <div
                       onClick={() => setPreviewFlippedCards((prev) => ({ ...prev, [block.id]: !isFlipped }))}
                       className="border-2 border-primary/30 rounded-2xl p-8 text-center bg-white dark:bg-navy shadow-sm cursor-pointer hover:border-primary transition-all min-h-[160px] flex flex-col justify-between"
@@ -3863,8 +5458,10 @@ function CourseEditor() {
 
               // 18. Summary
               if (block.type === "summary") {
-                return (
-                  <div key={block.id} className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 rounded-2xl p-6 space-y-3 my-6">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/30 rounded-2xl p-6 space-y-3 my-6">
                     <h3 className="text-base font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
                       <IconStar className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2} />
                       <span>{cstr(block.content, "title") || "Points clés à retenir"}</span>
@@ -3884,8 +5481,10 @@ function CourseEditor() {
               // 19. Resources
               if (block.type === "resources") {
                 const links = (block.content.links as { title: string; url: string; type: string }[]) || [];
-                return (
-                  <div key={block.id} className="border border-gray-200 dark:border-white/10 rounded-2xl p-6 space-y-3 my-6 bg-gray-50 dark:bg-white/5">
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
+                  <div className="border border-gray-200 dark:border-white/10 rounded-2xl p-6 space-y-3 my-6 bg-gray-50 dark:bg-white/5">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                       <IconLibrary className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" strokeWidth={1.8} />
                       <span>Ressources recommandées & Bibliographie</span>
@@ -3922,9 +5521,10 @@ function CourseEditor() {
                 const txt = cstr(block.content, "content");
                 const defOpen = Boolean(block.content.defaultOpen);
 
-                return (
+                return renderModulatedBlock(
+                  block,
+                  bIdx,
                   <details
-                    key={block.id}
                     className="group border border-amber-200/80 dark:border-amber-700/30 bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl overflow-hidden transition-all shadow-xs my-6"
                     open={defOpen ? true : undefined}
                   >
@@ -3956,9 +5556,15 @@ function CourseEditor() {
                               </span>
                             )}
                           </div>
-                          <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                            {tit}
-                          </h4>
+                          <WordEditableText
+                            value={tit}
+                            onChange={(val) => setContent(block.id, { ...block.content, title: val })}
+                            as="h4"
+                            blockId={block.id}
+                            className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate select-text"
+                            isWordMode={isWordPageMode}
+                            placeholder="Titre du point d'histoire..."
+                          />
                         </div>
                       </div>
 
@@ -3978,12 +5584,26 @@ function CourseEditor() {
                     <div className="border-t border-amber-200/60 dark:border-amber-800/30 p-5 sm:p-6 space-y-4 bg-white/70 dark:bg-navy/50">
                       {qte && (
                         <blockquote className="border-l-4 border-amber-500 pl-4 py-2 italic text-sm text-amber-950 dark:text-amber-200 bg-amber-100/40 dark:bg-amber-900/20 rounded-r-xl">
-                          {qte}
+                          <WordEditableText
+                            value={qte}
+                            onChange={(val) => setContent(block.id, { ...block.content, quote: val })}
+                            as="span"
+                            blockId={block.id}
+                            className="select-text"
+                            isWordMode={isWordPageMode}
+                            placeholder="Citation historique..."
+                          />
                         </blockquote>
                       )}
-                      <div className="text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-serif">
-                        {txt}
-                      </div>
+                      <WordEditableText
+                        value={txt}
+                        onChange={(val) => setContent(block.id, { ...block.content, content: val })}
+                        as="div"
+                        blockId={block.id}
+                        className="text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-serif select-text"
+                        isWordMode={isWordPageMode}
+                        placeholder="Récit historique..."
+                      />
                       {cap && (
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 italic pt-1 flex items-center gap-1.5">
                           <ImageIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" strokeWidth={1.8} />
@@ -3997,6 +5617,21 @@ function CourseEditor() {
 
               return null;
             })}
+
+            {/* Décompte sobre de fin de document (mots et blocs) */}
+            <div className="pt-8 mt-6 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500 select-none">
+              <div className="flex items-center gap-2">
+                <span>{courseStats.words.toLocaleString("fr-FR")} mots</span>
+                <span>•</span>
+                <span>{blocks.length} blocs</span>
+                <span>•</span>
+                <span>~{courseStats.readingTime} min de lecture</span>
+              </div>
+              <span className="text-[11px] opacity-60">
+                Hi! Platform • Document de cours
+              </span>
+            </div>
+
             <div className="clear-both" />
           </div>
         </div>
@@ -4029,8 +5664,154 @@ function CourseEditor() {
       </div>
     )}
 
-  </div>
-);
+      {/* ═════════════════════════════════════════════════════════════════════════ */}
+      {/* MENU CONTEXTUEL FLOTTANT STYLE MICROSOFT WORD (SÉLECTION OU CLIC DROIT)   */}
+      {/* ═════════════════════════════════════════════════════════════════════════ */}
+      {viewMode === "preview" && floatingToolbar.isOpen && (
+        <div
+          className="word-floating-toolbar fixed z-50 bg-white/95 dark:bg-navy/95 backdrop-blur-md border border-gray-200/90 dark:border-white/15 rounded-xl shadow-2xl p-1.5 flex items-center gap-1 select-none text-xs animate-in fade-in zoom-in-95 duration-150 transition-all ring-1 ring-black/5"
+          style={{
+            left: `${floatingToolbar.x}px`,
+            top: `${floatingToolbar.y}px`,
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {/* Sélecteur de Police */}
+          <select
+            value={courseFont}
+            onChange={(e) => setCourseFont(e.target.value as FontFamilyKey)}
+            className="text-[11px] font-medium px-1.5 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-200 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary h-7 max-w-[110px] cursor-pointer"
+            title="Police de texte"
+          >
+            {FONT_FAMILIES.map((f) => (
+              <option key={f.key} value={f.key}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Sélecteur de Taille */}
+          <select
+            value={courseFontSize}
+            onChange={(e) => setCourseFontSize(Number(e.target.value))}
+            className="text-[11px] font-semibold px-1 py-1 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-navy-dark text-gray-800 dark:text-gray-200 hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary h-7 w-12 text-center cursor-pointer"
+            title="Taille de police (px)"
+          >
+            {FONT_SIZES.map((sz) => (
+              <option key={sz} value={sz}>
+                {sz}
+              </option>
+            ))}
+          </select>
+
+          {/* Boutons A+ / A- */}
+          <div className="flex items-center">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setCourseFontSize((prev) => Math.min(28, prev + 1))}
+              title="Agrandir la police (A+)"
+              className="p-1 h-7 w-6 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-[11px] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <span className="font-extrabold flex items-center">A<span className="text-[8px] text-primary dark:text-blue-400">▲</span></span>
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setCourseFontSize((prev) => Math.max(12, prev - 1))}
+              title="Réduire la police (A-)"
+              className="p-1 h-7 w-6 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-[11px] flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <span className="font-extrabold flex items-center">A<span className="text-[8px] text-gray-500">▼</span></span>
+            </button>
+          </div>
+
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-white/10 mx-0.5" />
+
+          {/* Formatage : Gras, Italique, Souligné */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormatting("bold")}
+            title="Gras (**texte**)"
+            className="p-1 h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex items-center justify-center hover:text-primary font-bold"
+          >
+            <IconBold className="w-3.5 h-3.5" strokeWidth={2.5} />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormatting("italic")}
+            title="Italique (*texte*)"
+            className="p-1 h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex items-center justify-center hover:text-primary italic"
+          >
+            <IconItalic className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormatting("underline")}
+            title="Souligné (<u>texte</u>)"
+            className="p-1 h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex items-center justify-center hover:text-primary underline"
+          >
+            <IconUnderline className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-white/10 mx-0.5" />
+
+          {/* Formatage : Code, Surlignage */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormatting("code")}
+            title="Code inline (`code`)"
+            className="p-1 h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex items-center justify-center hover:text-primary"
+          >
+            <IconCode2 className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormatting("highlight")}
+            title="Surligner (==texte==)"
+            className="p-1 h-7 w-7 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+          >
+            <IconHighlighter className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+
+          {/* Action Modifier le bloc & Fermer */}
+          {floatingToolbar.blockId && (
+            <>
+              <div className="w-[1px] h-4 bg-gray-200 dark:bg-white/10 mx-0.5" />
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedBlockId(floatingToolbar.blockId);
+                  setViewMode("edit");
+                  setFloatingToolbar((prev) => ({ ...prev, isOpen: false }));
+                }}
+                title="Modifier ce bloc en mode Édition"
+                className="px-2 py-1 h-7 rounded-md bg-[#0B2F5E]/10 dark:bg-white/10 hover:bg-[#0B2F5E] dark:hover:bg-primary text-[#0B2F5E] dark:text-blue-300 hover:text-white transition-colors cursor-pointer font-bold text-[10px] flex items-center gap-1"
+              >
+                <Edit3 className="w-3 h-3" strokeWidth={2} />
+                <span>Éditer</span>
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setFloatingToolbar((prev) => ({ ...prev, isOpen: false }))}
+            title="Fermer le menu"
+            className="p-1 h-7 w-6 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+          >
+            <IconX className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+    </div>
+  );
 }
 
 // ─── Éditeur de Parcours MOOC ─────────────────────────────────────────────────
